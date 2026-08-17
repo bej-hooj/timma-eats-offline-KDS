@@ -35,6 +35,8 @@
       }
     }
   },
+  "kdsUnpairedTitle": "Tablet not paired",
+  "kdsUnpairedBody": "This tablet is not paired with a kiosk yet. Ask the manager to pair it before service.",
   "kdsOffline": "Offline",
   "kdsMuteAlarm": "Mute alarm",
   "kdsAlarmMuted": "Alarm muted",

@@ -230,6 +230,18 @@ abstract class AppLocalizations {
   /// **'Ticket {number}'**
   String kdsTicket(int number);
 
+  /// No description provided for @kdsUnpairedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tablette non appariée'**
+  String get kdsUnpairedTitle;
+
+  /// No description provided for @kdsUnpairedBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette tablette n\'est pas encore appariée à une borne. Contactez le responsable pour l\'apparier avant le service.'**
+  String get kdsUnpairedBody;
+
   /// No description provided for @kdsOffline.
   ///
   /// In fr, this message translates to:

@@ -79,6 +79,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get kdsUnpairedTitle => 'Tablette non appariée';
+
+  @override
+  String get kdsUnpairedBody =>
+      'Cette tablette n\'est pas encore appariée à une borne. Contactez le responsable pour l\'apparier avant le service.';
+
+  @override
   String get kdsOffline => 'Hors ligne';
 
   @override

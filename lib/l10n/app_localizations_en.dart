@@ -79,6 +79,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get kdsUnpairedTitle => 'Tablet not paired';
+
+  @override
+  String get kdsUnpairedBody =>
+      'This tablet is not paired with a kiosk yet. Ask the manager to pair it before service.';
+
+  @override
   String get kdsOffline => 'Offline';
 
   @override

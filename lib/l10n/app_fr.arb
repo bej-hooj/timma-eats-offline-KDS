@@ -35,6 +35,8 @@
       }
     }
   },
+  "kdsUnpairedTitle": "Tablette non appariée",
+  "kdsUnpairedBody": "Cette tablette n'est pas encore appariée à une borne. Contactez le responsable pour l'apparier avant le service.",
   "kdsOffline": "Hors ligne",
   "kdsMuteAlarm": "Couper l'alarme",
   "kdsAlarmMuted": "Alarme coupée",
