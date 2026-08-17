@@ -1,0 +1,49 @@
+{
+  "kdsBoardTitle": "Cuisine",
+  "kdsLaneCounter": "À encaisser",
+  "kdsLaneScheduled": "Programmées",
+  "kdsLaneNew": "Nouvelles",
+  "kdsLanePreparing": "En préparation",
+  "kdsLaneReady": "Prêtes",
+  "kdsLaneOutForDelivery": "En livraison",
+  "kdsLaneEmpty": "Rien ici",
+  "kdsSettleCash": "Encaisser en espèces",
+  "kdsAccept": "Accepter",
+  "kdsStartPreparing": "Commencer",
+  "kdsMarkReady": "Prêt",
+  "kdsHandOver": "Remettre",
+  "kdsSendOut": "Envoyer en livraison",
+  "kdsComplete": "Terminer",
+  "kdsPaid": "Payé",
+  "kdsUnpaid": "À encaisser",
+  "kdsSourceKiosk": "Borne",
+  "kdsSourceApp": "Appli",
+  "kdsSourceWeb": "Web",
+  "kdsWaitingMinutes": "{minutes} min",
+  "@kdsWaitingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "kdsTicket": "Ticket {number}",
+  "@kdsTicket": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "kdsOffline": "Hors ligne",
+  "kdsMuteAlarm": "Couper l'alarme",
+  "kdsAlarmMuted": "Alarme coupée",
+  "kdsExpired": "{count} ticket(s) non payé(s) expiré(s)",
+  "@kdsExpired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

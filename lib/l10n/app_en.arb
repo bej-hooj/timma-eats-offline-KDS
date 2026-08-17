@@ -1,0 +1,49 @@
+{
+  "kdsBoardTitle": "Kitchen",
+  "kdsLaneCounter": "To collect",
+  "kdsLaneScheduled": "Scheduled",
+  "kdsLaneNew": "New",
+  "kdsLanePreparing": "Preparing",
+  "kdsLaneReady": "Ready",
+  "kdsLaneOutForDelivery": "Out for delivery",
+  "kdsLaneEmpty": "Nothing here",
+  "kdsSettleCash": "Take cash",
+  "kdsAccept": "Accept",
+  "kdsStartPreparing": "Start",
+  "kdsMarkReady": "Ready",
+  "kdsHandOver": "Hand over",
+  "kdsSendOut": "Send out",
+  "kdsComplete": "Complete",
+  "kdsPaid": "Paid",
+  "kdsUnpaid": "To collect",
+  "kdsSourceKiosk": "Kiosk",
+  "kdsSourceApp": "App",
+  "kdsSourceWeb": "Web",
+  "kdsWaitingMinutes": "{minutes} min",
+  "@kdsWaitingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "kdsTicket": "Ticket {number}",
+  "@kdsTicket": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "kdsOffline": "Offline",
+  "kdsMuteAlarm": "Mute alarm",
+  "kdsAlarmMuted": "Alarm muted",
+  "kdsExpired": "{count} unpaid ticket(s) expired",
+  "@kdsExpired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}
