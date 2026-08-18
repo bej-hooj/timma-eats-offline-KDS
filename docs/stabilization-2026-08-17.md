@@ -59,3 +59,26 @@ The board still does not render kitchen line items, does not drain its outbox, a
 slip's collection code before completing. Those are composition stages, not bug fixes, and the
 isolated green suite is **not** operational evidence. `PosOrder` still has no `fire_at`, so the
 scheduled lane cannot fill: do not point this board at a branch taking scheduled orders.
+
+## iOS device proof — Bocav iPhone 14 Pro, 2026-08-18
+
+The board now runs on the iPhone, which is what makes the owner's two-device
+drill possible: **KDS on the iPhone, kiosk on the Samsung, one wifi box with no
+internet.**
+
+- `flutter build ios --release` → installed with `xcrun devicectl device install
+  app` → launched → process alive, no crash. Bundle `com.timmaeats.timmaKds`,
+  team `A9WB2G986G` (the customer app's), device
+  `D04247C3-CB18-57CE-AC14-54814BB5CA51`.
+- ⚠ **Debug builds cannot be launched standalone on iOS 14+** — `Cannot create a
+  FlutterEngine instance in debug mode without Flutter tooling or Xcode`,
+  followed by signal 11. Release (or profile) only, exactly as the customer app
+  already learned. Do not read that crash as a bug in the board.
+- ⚠ A **generic** `flutter build ios` produces a profile that does not include
+  this handset: `0xe8008012 … This provisioning profile cannot be installed on
+  this device`. Build once with the device as the destination and registration
+  allowed —
+  `xcodebuild -destination "id=<udid>" -allowProvisioningUpdates
+  -allowProvisioningDeviceRegistration` — and the profile then carries it.
+- No screenshot path exists for the iPhone from the CLI, so the visual check is
+  by eye on the handset; the process staying up is the automated half.
