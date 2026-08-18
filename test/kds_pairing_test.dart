@@ -47,17 +47,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('the manual address path is offered for a wifi without mDNS', (
+  testWidgets('both ways in are visible at once, without scrolling', (
     tester,
   ) async {
     await pump(tester);
 
-    // Most restaurant routers block multicast, so this is not an edge case.
-    await tester.tap(find.text('Saisir l\'adresse à la main'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Adresse de la borne'), findsOneWidget);
-    expect(find.text('Se connecter'), findsOneWidget);
+    // ⚠ The manual address used to hide behind a toggle at the bottom of a
+    // scroll. On this exact screen size that put it below the fold, so a
+    // manager on a router with multicast disabled — most of them — saw only a
+    // search that finds nothing. Both paths are asserted PRESENT and ON SCREEN.
+    final Size screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    for (final Finder finder in <Finder>[
+      find.text('Chercher la borne'),
+      find.text('Adresse de la borne'),
+      find.text('Se connecter'),
+    ]) {
+      expect(finder, findsOneWidget);
+      final Rect rect = tester.getRect(finder);
+      expect(
+        rect.bottom <= screen.height && rect.top >= 0,
+        isTrue,
+        reason: 'off screen without scrolling: $rect vs $screen',
+      );
+    }
   });
 
   testWidgets(
