@@ -121,12 +121,11 @@ class KdsTicketCard extends StatelessWidget {
     );
   }
 
-  Color _urgencyColor(ThemeData theme, KdsUrgency urgency) =>
-      switch (urgency) {
-        KdsUrgency.calm => AppColors.outline,
-        KdsUrgency.amber => const Color(0xFFB26A00),
-        KdsUrgency.red => theme.colorScheme.error,
-      };
+  Color _urgencyColor(ThemeData theme, KdsUrgency urgency) => switch (urgency) {
+    KdsUrgency.calm => AppColors.outline,
+    KdsUrgency.amber => const Color(0xFFB26A00),
+    KdsUrgency.red => theme.colorScheme.error,
+  };
 
   String _sourceLabel(AppLocalizations l10n, String source) => switch (source) {
     PosOrderSource.kiosk => l10n.kdsSourceKiosk,

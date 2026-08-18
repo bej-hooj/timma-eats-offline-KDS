@@ -98,4 +98,58 @@ class AppLocalizationsFr extends AppLocalizations {
   String kdsExpired(int count) {
     return '$count ticket(s) non payé(s) expiré(s)';
   }
+
+  @override
+  String get kdsPairTitle => 'Apparier cette cuisine';
+
+  @override
+  String get kdsPairSubtitle =>
+      'Trouvez la borne sur le wifi du restaurant, puis saisissez le code affiché sur son écran.';
+
+  @override
+  String get kdsPairSearch => 'Chercher la borne';
+
+  @override
+  String get kdsPairSearching => 'Recherche en cours…';
+
+  @override
+  String get kdsPairManual => 'Saisir l\'adresse à la main';
+
+  @override
+  String get kdsPairAddress => 'Adresse de la borne';
+
+  @override
+  String get kdsPairConnect => 'Se connecter';
+
+  @override
+  String get kdsPairChange => 'Changer';
+
+  @override
+  String get kdsPairCodePrompt =>
+      'Saisissez les six chiffres affichés sur la borne.';
+
+  @override
+  String get kdsPairJoin => 'Apparier';
+
+  @override
+  String get kdsPairJoining => 'Appairage…';
+
+  @override
+  String get kdsPairErrorCode => 'Code refusé. Vérifiez les six chiffres.';
+
+  @override
+  String get kdsPairErrorExpired =>
+      'Code expiré. Demandez-en un nouveau sur la borne.';
+
+  @override
+  String get kdsPairErrorNotFound =>
+      'Aucune borne trouvée. Vérifiez que les deux appareils sont sur le même wifi.';
+
+  @override
+  String get kdsPairErrorUnreachable =>
+      'Borne injoignable. Vérifiez le wifi et l\'adresse.';
+
+  @override
+  String get kdsPairErrorStore =>
+      'Impossible d\'enregistrer la clé de sécurité sur cette tablette.';
 }

@@ -138,14 +138,52 @@ class KdsBoardController extends Notifier<KdsBoardState> {
 }
 
 final NotifierProvider<KdsBoardController, KdsBoardState> kdsBoardProvider =
-    NotifierProvider<KdsBoardController, KdsBoardState>(
-      KdsBoardController.new,
-    );
+    NotifierProvider<KdsBoardController, KdsBoardState>(KdsBoardController.new);
 
 /// Overridden at the shell with the real engine, and in tests with one built on
 /// an in-memory store. Nothing in `lib/kds/` constructs an engine itself.
-final Provider<PosEngine> kdsEngineProvider = Provider<PosEngine>(
+/// The open local database, available **before** the board has an identity.
+///
+/// Pairing needs it: a tablet out of the box has no engine, because an engine
+/// needs a branch and a branch is what pairing grants. The store exists from
+/// the first launch, so the pairing screen can write the identity it earns.
+final Provider<PosStore> kdsStoreProvider = Provider<PosStore>(
   (Ref ref) => throw UnimplementedError(
-    'kdsEngineProvider must be overridden at the app shell',
+    'kdsStoreProvider must be overridden at the app shell',
   ),
 );
+
+/// This board's identity, or null until it has been paired.
+///
+/// Held in a provider rather than read once at startup so the app can move from
+/// the pairing screen to the board without the manager restarting anything.
+class KdsIdentityController extends Notifier<PosDeviceIdentity?> {
+  @override
+  PosDeviceIdentity? build() => ref.read(kdsStoreProvider).readIdentity();
+
+  /// Called once, by pairing, after the credential and branch secret are safely
+  /// stored. Reads back from the store rather than trusting what it was handed.
+  void adopt() => state = ref.read(kdsStoreProvider).readIdentity();
+}
+
+final NotifierProvider<KdsIdentityController, PosDeviceIdentity?>
+kdsIdentityProvider =
+    NotifierProvider<KdsIdentityController, PosDeviceIdentity?>(
+      KdsIdentityController.new,
+    );
+
+/// The board's engine, derived from the identity pairing wrote.
+///
+/// Derived rather than injected at the root: the board is built the moment
+/// pairing succeeds, and a provider that reads the identity is what lets the
+/// app move from the pairing screen into service without a restart. Tests and
+/// the shell may still override it with a value.
+final Provider<PosEngine> kdsEngineProvider = Provider<PosEngine>((Ref ref) {
+  final PosDeviceIdentity? identity = ref.watch(kdsIdentityProvider);
+  if (identity == null) {
+    // Unreachable from the UI: `KdsRoot` shows pairing while this is null, so
+    // no screen that reads the engine is ever mounted without one.
+    throw StateError('the board is not paired');
+  }
+  return PosEngine(store: ref.read(kdsStoreProvider), identity: identity);
+});

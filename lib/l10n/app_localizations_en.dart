@@ -98,4 +98,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String kdsExpired(int count) {
     return '$count unpaid ticket(s) expired';
   }
+
+  @override
+  String get kdsPairTitle => 'Pair this kitchen';
+
+  @override
+  String get kdsPairSubtitle =>
+      'Find the kiosk on the restaurant wifi, then type the code shown on its screen.';
+
+  @override
+  String get kdsPairSearch => 'Find the kiosk';
+
+  @override
+  String get kdsPairSearching => 'Searching…';
+
+  @override
+  String get kdsPairManual => 'Type the address by hand';
+
+  @override
+  String get kdsPairAddress => 'Kiosk address';
+
+  @override
+  String get kdsPairConnect => 'Connect';
+
+  @override
+  String get kdsPairChange => 'Change';
+
+  @override
+  String get kdsPairCodePrompt => 'Type the six digits shown on the kiosk.';
+
+  @override
+  String get kdsPairJoin => 'Pair';
+
+  @override
+  String get kdsPairJoining => 'Pairing…';
+
+  @override
+  String get kdsPairErrorCode => 'Code refused. Check the six digits.';
+
+  @override
+  String get kdsPairErrorExpired =>
+      'Code expired. Ask the kiosk for a new one.';
+
+  @override
+  String get kdsPairErrorNotFound =>
+      'No kiosk found. Check both devices are on the same wifi.';
+
+  @override
+  String get kdsPairErrorUnreachable =>
+      'Kiosk unreachable. Check the wifi and the address.';
+
+  @override
+  String get kdsPairErrorStore =>
+      'This tablet could not store the security key.';
 }

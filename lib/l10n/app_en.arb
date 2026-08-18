@@ -47,5 +47,21 @@
         "type": "int"
       }
     }
-  }
+  },
+  "kdsPairTitle": "Pair this kitchen",
+  "kdsPairSubtitle": "Find the kiosk on the restaurant wifi, then type the code shown on its screen.",
+  "kdsPairSearch": "Find the kiosk",
+  "kdsPairSearching": "Searching…",
+  "kdsPairManual": "Type the address by hand",
+  "kdsPairAddress": "Kiosk address",
+  "kdsPairConnect": "Connect",
+  "kdsPairChange": "Change",
+  "kdsPairCodePrompt": "Type the six digits shown on the kiosk.",
+  "kdsPairJoin": "Pair",
+  "kdsPairJoining": "Pairing…",
+  "kdsPairErrorCode": "Code refused. Check the six digits.",
+  "kdsPairErrorExpired": "Code expired. Ask the kiosk for a new one.",
+  "kdsPairErrorNotFound": "No kiosk found. Check both devices are on the same wifi.",
+  "kdsPairErrorUnreachable": "Kiosk unreachable. Check the wifi and the address.",
+  "kdsPairErrorStore": "This tablet could not store the security key."
 }

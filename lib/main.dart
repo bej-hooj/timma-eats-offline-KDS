@@ -7,8 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kds/design/time_util.dart';
-import 'kds/kds_app.dart';
-import 'kds/presentation/bootstrap_screen.dart';
+import 'kds/kds_root.dart';
 import 'kds/state/kds_board.dart';
 
 /// The kitchen board's entrypoint — the third surface in this repo, after the
@@ -34,26 +33,14 @@ Future<void> main() async {
   final Directory dir = await getApplicationDocumentsDirectory();
   final PosStore store = SqlitePosStore.open('${dir.path}/kds.db');
 
-  // **An unpaired tablet has no identity, and that is not a crash.** This was
-  // `store.readIdentity()!`, which meant a fresh install died before `runApp`
-  // and showed a cook nothing at all. There is no pairing flow in this build,
-  // so the board says what is missing instead of inventing a branch: a made-up
-  // branch id would render another restaurant's lanes and verify collection
-  // codes against a secret nobody holds.
-  final PosDeviceIdentity? identity = store.readIdentity();
-  if (identity == null) {
-    runApp(const KdsBootstrapApp(state: KdsBootstrapState.unpaired));
-    return;
-  }
-
+  // **An unpaired tablet has no identity, and that is not a crash** — and it is
+  // no longer a dead end either. The store is opened and handed to the app
+  // whether or not this board has been paired, so the pairing screen has
+  // somewhere to write the identity it earns.
   runApp(
     ProviderScope(
-      overrides: [
-        kdsEngineProvider.overrideWithValue(
-          PosEngine(store: store, identity: identity),
-        ),
-      ],
-      child: const KdsApp(),
+      overrides: [kdsStoreProvider.overrideWithValue(store)],
+      child: const KdsRoot(),
     ),
   );
 }

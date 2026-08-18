@@ -265,6 +265,102 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{count} ticket(s) non payé(s) expiré(s)'**
   String kdsExpired(int count);
+
+  /// No description provided for @kdsPairTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparier cette cuisine'**
+  String get kdsPairTitle;
+
+  /// No description provided for @kdsPairSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trouvez la borne sur le wifi du restaurant, puis saisissez le code affiché sur son écran.'**
+  String get kdsPairSubtitle;
+
+  /// No description provided for @kdsPairSearch.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chercher la borne'**
+  String get kdsPairSearch;
+
+  /// No description provided for @kdsPairSearching.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche en cours…'**
+  String get kdsPairSearching;
+
+  /// No description provided for @kdsPairManual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisir l\'adresse à la main'**
+  String get kdsPairManual;
+
+  /// No description provided for @kdsPairAddress.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse de la borne'**
+  String get kdsPairAddress;
+
+  /// No description provided for @kdsPairConnect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se connecter'**
+  String get kdsPairConnect;
+
+  /// No description provided for @kdsPairChange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer'**
+  String get kdsPairChange;
+
+  /// No description provided for @kdsPairCodePrompt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez les six chiffres affichés sur la borne.'**
+  String get kdsPairCodePrompt;
+
+  /// No description provided for @kdsPairJoin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparier'**
+  String get kdsPairJoin;
+
+  /// No description provided for @kdsPairJoining.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appairage…'**
+  String get kdsPairJoining;
+
+  /// No description provided for @kdsPairErrorCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code refusé. Vérifiez les six chiffres.'**
+  String get kdsPairErrorCode;
+
+  /// No description provided for @kdsPairErrorExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code expiré. Demandez-en un nouveau sur la borne.'**
+  String get kdsPairErrorExpired;
+
+  /// No description provided for @kdsPairErrorNotFound.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune borne trouvée. Vérifiez que les deux appareils sont sur le même wifi.'**
+  String get kdsPairErrorNotFound;
+
+  /// No description provided for @kdsPairErrorUnreachable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Borne injoignable. Vérifiez le wifi et l\'adresse.'**
+  String get kdsPairErrorUnreachable;
+
+  /// No description provided for @kdsPairErrorStore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer la clé de sécurité sur cette tablette.'**
+  String get kdsPairErrorStore;
 }
 
 class _AppLocalizationsDelegate

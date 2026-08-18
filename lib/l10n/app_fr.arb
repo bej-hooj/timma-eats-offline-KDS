@@ -47,5 +47,21 @@
         "type": "int"
       }
     }
-  }
+  },
+  "kdsPairTitle": "Apparier cette cuisine",
+  "kdsPairSubtitle": "Trouvez la borne sur le wifi du restaurant, puis saisissez le code affiché sur son écran.",
+  "kdsPairSearch": "Chercher la borne",
+  "kdsPairSearching": "Recherche en cours…",
+  "kdsPairManual": "Saisir l'adresse à la main",
+  "kdsPairAddress": "Adresse de la borne",
+  "kdsPairConnect": "Se connecter",
+  "kdsPairChange": "Changer",
+  "kdsPairCodePrompt": "Saisissez les six chiffres affichés sur la borne.",
+  "kdsPairJoin": "Apparier",
+  "kdsPairJoining": "Appairage…",
+  "kdsPairErrorCode": "Code refusé. Vérifiez les six chiffres.",
+  "kdsPairErrorExpired": "Code expiré. Demandez-en un nouveau sur la borne.",
+  "kdsPairErrorNotFound": "Aucune borne trouvée. Vérifiez que les deux appareils sont sur le même wifi.",
+  "kdsPairErrorUnreachable": "Borne injoignable. Vérifiez le wifi et l'adresse.",
+  "kdsPairErrorStore": "Impossible d'enregistrer la clé de sécurité sur cette tablette."
 }
