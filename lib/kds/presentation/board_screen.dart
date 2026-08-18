@@ -86,6 +86,18 @@ class _Header extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return Row(
       children: <Widget>[
+        // The TIMMA logo, so a kitchen tablet on a shelf of tablets is
+        // identifiable at a glance. Sized to the header's own type scale rather
+        // than to a constant, and it degrades to nothing rather than to a
+        // broken-image box — the board's job is tickets, not branding.
+        Image.asset(
+          'assets/branding/logo_inline.png',
+          height: KdsScale.headlineSize,
+          fit: BoxFit.contain,
+          errorBuilder: (BuildContext _, Object _, StackTrace? _) =>
+              const SizedBox.shrink(),
+        ),
+        const SizedBox(width: KdsScale.gapMd),
         Text(
           l10n.kdsBoardTitle,
           style: theme.textTheme.headlineLarge?.copyWith(
