@@ -205,11 +205,10 @@ class KdsPairingController extends Notifier<KdsPairingState> {
         code: code,
       );
 
-      await KdsCredentialVault.platform().write(result.credential);
-      await BranchCollectionSecretVault.platform().writeOnce(
-        branchId: hub.branchId,
-        secret: result.collectionSecret,
-      );
+      await ref.read(kdsCredentialVaultProvider).write(result.credential);
+      await ref
+          .read(kdsSecretVaultProvider)
+          .writeOnce(branchId: hub.branchId, secret: result.collectionSecret);
       store.writeIdentity(identity);
       // Only now does the rest of the app learn it has an identity, so a
       // half-finished pairing can never present itself as a working board.
@@ -241,6 +240,21 @@ class KdsPairingController extends Notifier<KdsPairingState> {
   /// A human has to recognise it, so it names the product, not a UUID.
   String _label() => 'Cuisine';
 }
+
+/// The keystore-backed vaults, injectable so the pairing handshake can be proven
+/// on a host without a platform channel.
+///
+/// They were constructed inline with `.platform()`, which meant the one path
+/// that decides whether two tablets can work together could only be tested by
+/// hand on two devices. A seam here is the difference between a proof and a
+/// hope.
+final Provider<KdsCredentialVault> kdsCredentialVaultProvider =
+    Provider<KdsCredentialVault>((Ref ref) => KdsCredentialVault.platform());
+
+final Provider<BranchCollectionSecretVault> kdsSecretVaultProvider =
+    Provider<BranchCollectionSecretVault>(
+      (Ref ref) => BranchCollectionSecretVault.platform(),
+    );
 
 final NotifierProvider<KdsPairingController, KdsPairingState>
 kdsPairingProvider = NotifierProvider<KdsPairingController, KdsPairingState>(

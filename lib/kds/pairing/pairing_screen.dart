@@ -141,32 +141,67 @@ class _KdsPairingScreenState extends ConsumerState<KdsPairingScreen> {
                       style: const TextStyle(fontSize: KdsScale.bodySize),
                     ),
                     const SizedBox(height: KdsScale.gap),
-                    TextField(
-                      controller: _code,
-                      autofocus: true,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(6),
-                      ],
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: KdsScale.totalSize,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 8,
-                      ),
-                      decoration: const InputDecoration(counterText: ''),
-                    ),
-                    const SizedBox(height: KdsScale.gapMd),
-                    FilledButton(
-                      onPressed: pairing.joining || _code.text.length < 6
-                          ? null
-                          : () => controller.join(_code.text),
-                      child: Text(
-                        pairing.joining
-                            ? l10n.kdsPairJoining
-                            : l10n.kdsPairJoin,
-                      ),
+                    // ⚠ `ValueListenableBuilder`, not a bare read of
+                    // `_code.text`.
+                    //
+                    // The button's enabled state depends on what has been
+                    // typed, and this screen only rebuilt when the PAIRING
+                    // state changed — so typing all six digits left the button
+                    // disabled and pairing was impossible from the product.
+                    // Reported from the device; a widget test now types the
+                    // digits and asserts the button comes alive.
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: _code,
+                      builder:
+                          (
+                            BuildContext context,
+                            TextEditingValue value,
+                            Widget? _,
+                          ) {
+                            final bool complete = value.text.length == 6;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                TextField(
+                                  controller: _code,
+                                  autofocus: true,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: <TextInputFormatter>[
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(6),
+                                  ],
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: KdsScale.totalSize,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 8,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    counterText: '',
+                                  ),
+                                  // A six-digit code has one obvious end, and a
+                                  // cook holding a tablet should not have to
+                                  // find a button after typing it.
+                                  onSubmitted: (String code) {
+                                    if (code.length == 6) {
+                                      controller.join(code);
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: KdsScale.gapMd),
+                                FilledButton(
+                                  onPressed: pairing.joining || !complete
+                                      ? null
+                                      : () => controller.join(value.text),
+                                  child: Text(
+                                    pairing.joining
+                                        ? l10n.kdsPairJoining
+                                        : l10n.kdsPairJoin,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                     ),
                   ],
 

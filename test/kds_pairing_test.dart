@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
+import 'package:pos_link/pos_link.dart';
 import 'package:timma_kds/kds/kds_root.dart';
+import 'package:timma_kds/kds/pairing/pairing_controller.dart';
 import 'package:timma_kds/kds/pairing/pairing_screen.dart';
 import 'package:timma_kds/kds/state/kds_board.dart';
 
@@ -93,6 +95,51 @@ void main() {
       );
     },
   );
+
+  testWidgets('typing the six digits enables Apparier', (tester) async {
+    // ⚠ The bug this exists for: the button's enabled state read `_code.text`
+    // while the screen only rebuilt on PAIRING state changes, so typing all six
+    // digits left *Apparier* disabled and pairing was impossible from the
+    // product. Reported from the device, not caught here — so it is caught here
+    // now.
+    await pump(tester);
+
+    // Reach the code step through the manual address path, without a network:
+    // selecting a hub is what reveals the keypad.
+    final KdsPairingController controller = ProviderScope.containerOf(
+      tester.element(find.byType(KdsPairingScreen)),
+    ).read(kdsPairingProvider.notifier);
+    controller.select(
+      HubAdvertisement(
+        endpoint: const HubEndpoint(host: '192.168.1.50', port: 8801),
+        hubDeviceId: 'kiosk-door',
+        hubLabel: 'Borne entrée',
+        branchId: 'branch-1',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    Finder joinButton() => find.widgetWithText(FilledButton, 'Apparier');
+    expect(
+      tester.widget<FilledButton>(joinButton()).onPressed,
+      isNull,
+      reason: 'nothing typed yet',
+    );
+
+    await tester.enterText(find.byType(TextField).first, '758388');
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<FilledButton>(joinButton()).onPressed,
+      isNotNull,
+      reason: 'six digits typed — the only remaining step must be pressable',
+    );
+
+    // Five digits is not a code, and must not be offered as one.
+    await tester.enterText(find.byType(TextField).first, '75838');
+    await tester.pumpAndSettle();
+    expect(tester.widget<FilledButton>(joinButton()).onPressed, isNull);
+  });
 
   testWidgets('the pairing screen fits real tablet sizes, in French', (
     tester,
