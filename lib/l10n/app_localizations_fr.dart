@@ -135,7 +135,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get kdsPairJoining => 'Appairage…';
 
   @override
-  String get kdsPairErrorCode => 'Code refusé. Vérifiez les six chiffres.';
+  String get kdsPairErrorCode =>
+      'Code refusé. Vérifiez les six chiffres, ou demandez-en un nouveau sur la borne.';
 
   @override
   String get kdsPairErrorExpired =>

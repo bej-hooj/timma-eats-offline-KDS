@@ -59,7 +59,7 @@
   "kdsPairCodePrompt": "Saisissez les six chiffres affichés sur la borne.",
   "kdsPairJoin": "Apparier",
   "kdsPairJoining": "Appairage…",
-  "kdsPairErrorCode": "Code refusé. Vérifiez les six chiffres.",
+  "kdsPairErrorCode": "Code refusé. Vérifiez les six chiffres, ou demandez-en un nouveau sur la borne.",
   "kdsPairErrorExpired": "Code expiré. Demandez-en un nouveau sur la borne.",
   "kdsPairErrorNotFound": "Aucune borne trouvée. Vérifiez que les deux appareils sont sur le même wifi.",
   "kdsPairErrorUnreachable": "Borne injoignable. Vérifiez le wifi et l'adresse.",

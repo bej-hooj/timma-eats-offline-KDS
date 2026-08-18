@@ -134,7 +134,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kdsPairJoining => 'Pairing…';
 
   @override
-  String get kdsPairErrorCode => 'Code refused. Check the six digits.';
+  String get kdsPairErrorCode =>
+      'Code refused. Check the six digits, or ask the kiosk for a new one.';
 
   @override
   String get kdsPairErrorExpired =>

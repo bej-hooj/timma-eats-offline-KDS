@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -194,7 +195,7 @@ void main() {
     expect(keystore.values, isEmpty);
   });
 
-  test('an expired code is refused', () async {
+  test('a superseded code is refused as a bad code', () async {
     final ProviderContainer c = container();
     final KdsPairingController board = c.read(kdsPairingProvider.notifier);
     final PairingCode code = await registry.begin();
@@ -208,6 +209,85 @@ void main() {
 
     expect(c.read(kdsPairingProvider).paired, isFalse);
     expect(boardStore.readIdentity(), isNull);
+    expect(
+      c.read(kdsPairingProvider).error,
+      KdsPairingError.badCode,
+      reason: 'the hub cannot tell a superseded window from wrong digits, and '
+          'must not leak which — so the message covers both',
+    );
+  });
+
+  test('a code that timed out says so, and does not blame the wifi', () async {
+    // ⚠ The defect this pins: on the devices, a code that had simply timed out
+    // while somebody walked from the borne to the kitchen reported **"Borne
+    // injoignable. Vérifiez le wifi et l'adresse."** — sending a manager to the
+    // router while the borne's own screen said *Code expiré*.
+    final PosStore quickStore = SqlitePosStore.inMemory();
+    quickStore.writeIdentity(hubIdentity);
+    addTearDown(quickStore.close);
+    final PairingRegistry quick = PairingRegistry(
+      collectionSecret: branchSecret,
+      policy: const PairingPolicy(expiresAfter: Duration(milliseconds: 1)),
+    );
+    final LanHubServer quickServer = LanHubServer(
+      engine: PosEngine(store: quickStore, identity: hubIdentity),
+      pairing: quick,
+    );
+    final HubEndpoint quickEndpoint = await quickServer.start(
+      address: InternetAddress.loopbackIPv4,
+      port: 0,
+    );
+    addTearDown(quickServer.close);
+
+    final PairingCode code = await quick.begin();
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    final ProviderContainer c = container();
+    final KdsPairingController board = c.read(kdsPairingProvider.notifier);
+    board.select(
+      HubAdvertisement(
+        endpoint: quickEndpoint,
+        hubDeviceId: hubIdentity.deviceId,
+        hubLabel: hubIdentity.label,
+        branchId: branchId,
+      ),
+    );
+    await board.join(code.value);
+
+    expect(c.read(kdsPairingProvider).paired, isFalse);
+    expect(
+      c.read(kdsPairingProvider).error,
+      KdsPairingError.expired,
+      reason: 'the remedy is "ask the borne for a new code", not "check the '
+          'wifi" — the kiosk is answering perfectly well',
+    );
+  });
+
+  test('a hub that is genuinely gone still says so', () async {
+    // The other half of the same fork: the message must not become "code
+    // expired" for every failure, or the honest network error disappears.
+    final ProviderContainer c = container();
+    final KdsPairingController board = c.read(kdsPairingProvider.notifier);
+    final PairingCode code = await registry.begin();
+
+    board.select(advertisement());
+    await server.close();
+
+    // ⚠ **`LanPairingClient` leaks the connect failure as an unobserved async
+    // error.** It completes its own future correctly — the controller catches
+    // it and the message below is right — but `WebSocketChannel.connect` also
+    // reports to the zone, where nothing is listening, and an unobserved async
+    // error fails a Dart test outright. Guarding here keeps this test about the
+    // message; the leak itself is a `pos_link` defect, recorded in
+    // `docs/board-link-and-alarm-2026-08-18.md`, and fixing it means moving the
+    // pinned commit in both tablet repos together.
+    await runZonedGuarded(
+      () => board.join(code.value),
+      (Object _, StackTrace _) {},
+    );
+
+    expect(c.read(kdsPairingProvider).paired, isFalse);
+    expect(c.read(kdsPairingProvider).error, KdsPairingError.unreachable);
   });
 
   test('the code never appears anywhere the board could log it', () async {

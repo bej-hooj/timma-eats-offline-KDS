@@ -335,7 +335,7 @@ abstract class AppLocalizations {
   /// No description provided for @kdsPairErrorCode.
   ///
   /// In fr, this message translates to:
-  /// **'Code refusé. Vérifiez les six chiffres.'**
+  /// **'Code refusé. Vérifiez les six chiffres, ou demandez-en un nouveau sur la borne.'**
   String get kdsPairErrorCode;
 
   /// No description provided for @kdsPairErrorExpired.

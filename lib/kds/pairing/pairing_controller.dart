@@ -231,7 +231,19 @@ class KdsPairingController extends Notifier<KdsPairingState> {
     } on LinkProtocolException catch (error) {
       state = state.copyWith(
         joining: false,
+        // The hub distinguishes a *stale window* from *wrong digits*, and only
+        // one of those is the manager's fault. Collapsing both into "code
+        // refused" sent people back to re-read six digits they had typed
+        // correctly, because the window had simply timed out while they walked
+        // from the borne to the kitchen.
         error: switch (error.code) {
+          // Nothing to claim, or too many tries: in every one of these the
+          // remedy is the same single sentence — go back and ask the borne for
+          // a new code.
+          PairingErrorCode.expired ||
+          PairingErrorCode.unavailable ||
+          PairingErrorCode.attemptsExceeded => KdsPairingError.expired,
+          PairingErrorCode.incorrectCode ||
           LinkProtocolErrorCode.badPairing => KdsPairingError.badCode,
           _ => KdsPairingError.refused,
         },
@@ -242,10 +254,41 @@ class KdsPairingController extends Notifier<KdsPairingState> {
         error: KdsPairingError.storeFailed,
       );
     } on Object {
+      // ⚠ **"Borne injoignable" was a lie the kitchen could not act on.** An
+      // expired code does not fail as a protocol error: the kiosk simply has no
+      // pairing window open, the socket goes away, and everything landed in
+      // this catch — so the borne said *Code expiré* while the cuisine, two
+      // metres away, told a manager to go and check the wifi. Asking `/health`
+      // separates the two honestly: if the kiosk answers, the network is fine
+      // and the code is the problem.
+      final bool reachable = await _reachable(hub.endpoint);
       state = state.copyWith(
         joining: false,
-        error: KdsPairingError.unreachable,
+        error: reachable
+            ? KdsPairingError.expired
+            : KdsPairingError.unreachable,
       );
+    }
+  }
+
+  /// Is the hub answering at all? One short HTTP call, never a retry loop: this
+  /// runs while a manager is standing at a tablet waiting for a message.
+  Future<bool> _reachable(HubEndpoint endpoint) async {
+    final HttpClient client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 3);
+    try {
+      final HttpClientRequest request = await client
+          .getUrl(endpoint.healthUri)
+          .timeout(const Duration(seconds: 3));
+      final HttpClientResponse response = await request.close().timeout(
+        const Duration(seconds: 3),
+      );
+      await response.drain<void>();
+      return response.statusCode == HttpStatus.ok;
+    } on Object {
+      return false;
+    } finally {
+      client.close(force: true);
     }
   }
 

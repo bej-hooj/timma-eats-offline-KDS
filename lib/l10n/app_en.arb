@@ -59,7 +59,7 @@
   "kdsPairCodePrompt": "Type the six digits shown on the kiosk.",
   "kdsPairJoin": "Pair",
   "kdsPairJoining": "Pairing…",
-  "kdsPairErrorCode": "Code refused. Check the six digits.",
+  "kdsPairErrorCode": "Code refused. Check the six digits, or ask the kiosk for a new one.",
   "kdsPairErrorExpired": "Code expired. Ask the kiosk for a new one.",
   "kdsPairErrorNotFound": "No kiosk found. Check both devices are on the same wifi.",
   "kdsPairErrorUnreachable": "Kiosk unreachable. Check the wifi and the address.",
