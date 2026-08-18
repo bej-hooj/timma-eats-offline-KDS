@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_core/testing.dart';
+import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/domain/kds_alarm.dart';
 import 'package:timma_kds/kds/domain/kds_lanes.dart';
 import 'package:timma_kds/kds/kds_app.dart';
@@ -14,6 +15,7 @@ import 'package:timma_kds/kds/state/kds_board.dart';
 void main() {
   late PosStore store;
   late PosEngine engine;
+  late RecordingAlarmSink speaker;
 
   const PosDeviceIdentity identity = PosDeviceIdentity(
     deviceId: 'kds-cuisine',
@@ -55,6 +57,7 @@ void main() {
     store.stageSnapshot(m, DateTime.utc(2026, 8, 16));
     store.activateSnapshot(m.version, DateTime.utc(2026, 8, 16));
     engine = PosEngine(store: store, identity: identity);
+    speaker = RecordingAlarmSink();
   });
 
   tearDown(() => store.close());
@@ -63,9 +66,15 @@ void main() {
     lines: const <PosCartLine>[PosCartLine(productId: 'p-poulet', quantity: 1)],
   );
 
-  ProviderContainer container() {
+  /// The alarm's speaker is stubbed here for the same reason a camera or a
+  /// printer would be: the sink's default is the **real** one, so the wiring
+  /// cannot ship silent by accident, and a test that wants quiet has to say so.
+  ProviderContainer container({PosEngine? withEngine}) {
     final ProviderContainer c = ProviderContainer(
-      overrides: [kdsEngineProvider.overrideWithValue(engine)],
+      overrides: [
+        kdsEngineProvider.overrideWithValue(withEngine ?? engine),
+        kdsAlarmSinkProvider.overrideWithValue(speaker),
+      ],
     );
     addTearDown(c.dispose);
     return c;
@@ -160,10 +169,7 @@ void main() {
       );
       clock.advance(const Duration(minutes: 16));
 
-      final ProviderContainer c = ProviderContainer(
-        overrides: [kdsEngineProvider.overrideWithValue(timed)],
-      );
-      addTearDown(c.dispose);
+      final ProviderContainer c = container(withEngine: timed);
       final KdsBoardController board = c.read(kdsBoardProvider.notifier);
 
       board.expireStaleUnpaid();
@@ -279,7 +285,10 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [kdsEngineProvider.overrideWithValue(engine)],
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(speaker),
+          ],
           child: const KdsApp(),
         ),
       );

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
 
+import '../audio/kds_alarm_sink.dart';
+import '../domain/kds_alarm.dart';
 import '../domain/kds_lanes.dart';
 
 /// The board as the kitchen sees it, plus the two actions a cook can take.
@@ -16,6 +18,7 @@ class KdsBoardState {
     required this.now,
     this.lastError,
     this.expiredJustNow = 0,
+    this.alarmMuted = false,
   });
 
   final Map<String, List<PosOrder>> lanes;
@@ -37,11 +40,28 @@ class KdsBoardState {
   /// The lane the *waiting* alarm watches. Unclaimed work, not all work.
   bool get hasUnclaimedWork =>
       lane(KdsLane.counter).isNotEmpty || lane(KdsLane.newTickets).isNotEmpty;
+
+  /// True while the alarm is nagging and nobody has muted it — the one
+  /// condition that puts *Couper l'alarme* on the screen. Derived rather than
+  /// stored, so the button cannot outlive the noise.
+  bool get alarming => hasUnclaimedWork && !alarmMuted;
+
+  /// Whether the current run has been silenced. Not a setting: it clears itself
+  /// when the lane empties, and a new arrival overrides it.
+  final bool alarmMuted;
 }
 
 class KdsBoardController extends Notifier<KdsBoardState> {
   Timer? _tick;
   Timer? _sweep;
+
+  /// The rule half of the alarm. Held on the controller, not rebuilt per read:
+  /// its whole job is remembering which tickets have already been heard, and a
+  /// [KdsAlarm] reconstructed every five seconds would have an empty seen-set
+  /// every five seconds — an alarm that screams continuously, which a kitchen
+  /// silences by turning the tablet's volume down, which is how a board ends up
+  /// mute for the rest of the shift.
+  final KdsAlarm _alarm = KdsAlarm();
 
   /// Survives a refresh. Held on the controller rather than recomputed per
   /// read, because the board re-reads every 5 s: a count that lived only in the
@@ -72,19 +92,48 @@ class KdsBoardController extends Notifier<KdsBoardState> {
     return _read();
   }
 
+  KdsAlarmSink get _sink => ref.read(kdsAlarmSinkProvider);
+
+  /// Push what the cook just did, now rather than on the next tick.
+  void _publish() => ref.read(kdsIntentPublisherProvider)();
+
   PosEngine get _engine => ref.read(kdsEngineProvider);
 
   KdsBoardState _read({String? error}) {
     final DateTime now = DateTime.now().toUtc();
+    final Map<String, List<PosOrder>> lanes = KdsLane.board(
+      _engine.store.openOrders(),
+      now: now,
+    );
+
+    // ⚠ **Every read evaluates the alarm.** Not only the ones a cook triggered:
+    // an order arriving from the kiosk changes the board without anyone
+    // touching it, and that is precisely the arrival the kitchen must hear. The
+    // decision is [KdsAlarm]'s; this only carries it to a speaker.
+    final KdsAlarmCue? cue = _alarm.evaluate(lanes: lanes, now: now);
+    if (cue != null) {
+      unawaited(_sink.ring(cue.register));
+    }
+
     return KdsBoardState(
-      lanes: KdsLane.board(_engine.store.openOrders(), now: now),
+      lanes: lanes,
       now: now,
       lastError: error,
       expiredJustNow: _expiredJustNow,
+      alarmMuted: _alarm.muted,
     );
   }
 
   void refresh() => state = _read();
+
+  /// *Couper l'alarme.* Silences the sound that is playing **and** the rest of
+  /// this nag — but not the next order: [KdsAlarm.mute] is cleared the moment
+  /// something new arrives, so muting a run can never swallow an arrival.
+  void muteAlarm() {
+    _alarm.mute();
+    unawaited(_sink.silence());
+    state = _read();
+  }
 
   /// **One button, cash, no picker and no typed note.** A kitchen tablet during
   /// a rush is the worst place in the building to ask someone to type into a
@@ -95,6 +144,7 @@ class KdsBoardController extends Notifier<KdsBoardState> {
     try {
       _engine.settleCounterCash(clientId);
       state = _read();
+      _publish();
     } on PosError catch (error) {
       state = _read(error: error.code);
     }
@@ -110,6 +160,11 @@ class KdsBoardController extends Notifier<KdsBoardState> {
     try {
       _engine.advance(order.clientId, to);
       state = _read();
+      // ⚠ **The tap is only half of it.** `PosEngine.advance` moves the local
+      // row and queues an envelope addressed to the hub; if nothing drains that
+      // queue the cook sees *Prêt* and the kiosk never does. Waiting for the
+      // three-second pump would be correct but visibly slow at a counter.
+      _publish();
     } on PosError catch (error) {
       state = _read(error: error.code);
     }
@@ -139,6 +194,34 @@ class KdsBoardController extends Notifier<KdsBoardState> {
 
 final NotifierProvider<KdsBoardController, KdsBoardState> kdsBoardProvider =
     NotifierProvider<KdsBoardController, KdsBoardState>(KdsBoardController.new);
+
+/// How the board pushes a cook's action to the kiosk, without knowing what a
+/// hub is.
+///
+/// The direction of this dependency is deliberate and mirrors the kiosk's
+/// `kioskBoardPublisherProvider`: the board must keep working with the socket
+/// down — that is the entire premise (§23.1) — so the transport is told about
+/// the board, never the other way round. Defaults to a no-op, which is exactly
+/// right for an unpaired tablet and for a widget test.
+final Provider<void Function()> kdsIntentPublisherProvider =
+    Provider<void Function()>((Ref ref) => () {});
+
+/// The alarm's speaker.
+///
+/// Defaults to the **real** one rather than to silence. A default of silence is
+/// how a board ships mute: everything compiles, every test passes, and the only
+/// thing that tells you is a kitchen that misses an order — so the production
+/// path is the one you get for free and a test has to ask for quiet.
+///
+/// [AudioAlarmSink] builds its player lazily and swallows platform failures, so
+/// this default costs a widget test nothing.
+final Provider<KdsAlarmSink> kdsAlarmSinkProvider = Provider<KdsAlarmSink>((
+  Ref ref,
+) {
+  final KdsAlarmSink sink = AudioAlarmSink();
+  ref.onDispose(sink.dispose);
+  return sink;
+});
 
 /// Overridden at the shell with the real engine, and in tests with one built on
 /// an in-memory store. Nothing in `lib/kds/` constructs an engine itself.

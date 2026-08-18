@@ -8,6 +8,7 @@ import 'package:pos_core/pos_core.dart';
 import 'package:pos_link/pos_link.dart';
 import 'package:pos_link_flutter/pos_link_flutter.dart';
 
+import '../link/kds_link.dart';
 import '../state/kds_board.dart';
 
 /// Stable codes the screen turns into French. Never an exception's own text.
@@ -210,9 +211,21 @@ class KdsPairingController extends Notifier<KdsPairingState> {
           .read(kdsSecretVaultProvider)
           .writeOnce(branchId: hub.branchId, secret: result.collectionSecret);
       store.writeIdentity(identity);
+      // ⚠ **And the address.** Everything above is what proves *who* this board
+      // is; without this line it would come back from a restart perfectly
+      // provisioned and with nowhere to connect, which is how a paired kitchen
+      // ends up permanently blank two metres from a running kiosk.
+      KdsHubAddress.remember(
+        store,
+        endpoint: hub.endpoint,
+        label: hub.hubLabel,
+      );
       // Only now does the rest of the app learn it has an identity, so a
       // half-finished pairing can never present itself as a working board.
       ref.read(kdsIdentityProvider.notifier).adopt();
+      // And the socket opens straight away: a manager who has just paired a
+      // tablet expects the first order to land, not to have to restart it.
+      unawaited(ref.read(kdsLinkProvider.notifier).start());
 
       state = state.copyWith(joining: false, paired: true);
     } on LinkProtocolException catch (error) {

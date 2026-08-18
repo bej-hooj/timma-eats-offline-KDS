@@ -221,7 +221,7 @@ void main() {
     // A sniffer once minted a credential from a code it saw on the wire. The
     // code is HKDF input and must exist only on the kiosk's screen and in the
     // hands of whoever typed it.
-    expect('${code}'.contains(code.value), isFalse);
+    expect('$code'.contains(code.value), isFalse);
     for (final String stored in keystore.values.values) {
       expect(stored.contains(code.value), isFalse);
     }

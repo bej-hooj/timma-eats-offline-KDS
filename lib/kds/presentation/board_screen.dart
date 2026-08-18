@@ -5,6 +5,7 @@ import 'package:pos_core/pos_core.dart';
 import 'package:timma_kds/design/app_tokens.dart';
 import 'package:timma_kds/l10n/app_localizations.dart';
 import '../domain/kds_lanes.dart';
+import '../link/kds_link.dart';
 import '../state/kds_board.dart';
 import '../theme/kds_scale.dart';
 import 'widgets/kds_ticket_card.dart';
@@ -22,6 +23,7 @@ class KdsBoardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final KdsBoardState board = ref.watch(kdsBoardProvider);
     final KdsBoardController controller = ref.read(kdsBoardProvider.notifier);
+    final KdsLinkState link = ref.watch(kdsLinkProvider);
     final AppLocalizations l10n = AppLocalizations.of(context)!;
 
     return PopScope(
@@ -36,7 +38,11 @@ class KdsBoardScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _Header(board: board),
+                _Header(
+                  board: board,
+                  link: link,
+                  onMute: controller.muteAlarm,
+                ),
                 const SizedBox(height: KdsScale.gapMd),
                 Expanded(
                   child: ListView(
@@ -76,9 +82,15 @@ class KdsBoardScreen extends ConsumerWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.board});
+  const _Header({
+    required this.board,
+    required this.link,
+    required this.onMute,
+  });
 
   final KdsBoardState board;
+  final KdsLinkState link;
+  final VoidCallback onMute;
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +127,55 @@ class _Header extends StatelessWidget {
             style: theme.textTheme.labelLarge,
           ),
         const Spacer(),
+        // ⚠ **The badge is not decoration.** A board that has silently lost the
+        // kiosk looks exactly like a board with no orders — same empty lanes,
+        // same calm screen — and a kitchen cannot tell those apart without
+        // being told. It is the only way "quiet evening" and "the wifi died"
+        // are distinguishable from across a kitchen.
+        if (!link.connected) ...<Widget>[
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: KdsScale.gapMd,
+              vertical: KdsScale.gap,
+            ),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.error,
+              borderRadius: BorderRadius.circular(KdsScale.gap),
+            ),
+            child: Text(
+              l10n.kdsOffline,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onError,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: KdsScale.gapMd),
+        ],
+        // Only while it is actually making noise. A permanent mute button is a
+        // button somebody presses once, out of curiosity, at 11:00.
+        if (board.alarming)
+          FilledButton.icon(
+            // ⚠ The theme's `minimumSize` is `Size.fromHeight` — **infinite
+            // width** — because every other button on this board is a full-width
+            // card action. In a `Row` that is an unbounded-width crash, not a
+            // wide button. The height floor is the rule that matters (72 dp for
+            // a gloved hand) and it is kept; only the width opt-out changes.
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, KdsScale.minTarget),
+            ),
+            onPressed: onMute,
+            icon: const Icon(Icons.volume_off),
+            label: Text(l10n.kdsMuteAlarm),
+          )
+        else if (board.alarmMuted)
+          Text(
+            l10n.kdsAlarmMuted,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: AppColors.textMuted,
+            ),
+          ),
+        if (board.lastError != null) const SizedBox(width: KdsScale.gapMd),
         if (board.lastError != null)
           Text(
             board.lastError!,
