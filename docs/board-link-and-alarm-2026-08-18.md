@@ -84,6 +84,29 @@ the offline phase with the wifi box.
   the borne's own screen said **"Code expiré"**. The hub does distinguish the
   cases; the board collapsed them.
 
+## Design pass — 2026-08-19
+
+Run with the `ui-ux-pro-max` skill's kiosk design system. Its palette
+recommendation (appetising red + gold) was **not** taken: TIMMA's colours are
+locked and shared with the app and the landing through `design-tokens`. What was
+taken is its structure — one primary thing per screen, large type read at arm's
+length, 48 px+ section gaps.
+
+* **The composer stopped being an empty screen.** For a dish with no variants
+  and no option groups — most of the menu — it was a 72 dp thumbnail, a name,
+  and two-thirds blank cream on the screen where a customer commits to spending
+  money. The photograph now fills what the choices are not using, with the name
+  and price under it; landscape splits horizontally, and with nothing to decide
+  the dish takes the whole width.
+* **A pale stripe ran down the edge of every branded screen.** The display
+  cutout takes a strip in landscape, `SafeArea` insets past it, and the Scaffold
+  showed through. It is painted in the stage's own colour now.
+* **The board header overflowed by 44 px** the moment the alarm and the expiry
+  line were on screen together — the stripe went through *Couper l'alarme*.
+  Everything that is words gives way; the badge and the button do not.
+
+All three were found by looking at a screen, and all three now have a test.
+
 ## Still open
 
 1. **The branch-secret conflict has no ceremony.** Re-pair a kitchen to a kiosk
