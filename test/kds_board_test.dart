@@ -7,12 +7,14 @@ import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/domain/kds_alarm.dart';
 import 'package:timma_kds/kds/domain/kds_lanes.dart';
 import 'package:timma_kds/kds/kds_app.dart';
+import 'package:timma_kds/kds/presentation/board_screen.dart';
 import 'package:timma_kds/kds/presentation/widgets/kds_ticket_card.dart';
 import 'package:timma_kds/kds/state/kds_board.dart';
 
 /// K5.2–K5.5 — the board, the counter action, the alarm registers and the
 /// expiry sweep, against a real engine on an in-memory store.
 void main() {
+  _headerFitsTests();
   late PosStore store;
   late PosEngine engine;
   late RecordingAlarmSink speaker;
@@ -316,6 +318,105 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Accepter'), findsOneWidget);
       expect(find.byType(KdsTicketCard), findsOneWidget);
       expect(placed.order.ticketNumber, isNotNull);
+    });
+  });
+}
+
+/// The header holds a logo, a title, an expiry line, an offline badge and
+/// *Couper l'alarme* on one row.
+///
+/// ⚠ It overflowed by 44 px on the simulator the first time the expiry line and
+/// the alarm were on screen together — the hazard stripe was drawn straight
+/// through the mute button. A `Row` with a `Spacer` does not protect anything:
+/// the non-flexible children take their natural widths first, and French is
+/// longer than English on every one of these strings.
+void _headerFitsTests() {
+  group('the board header at the real board width', () {
+    late PosStore store;
+    late PosEngine engine;
+    late RecordingAlarmSink speaker;
+
+    const PosDeviceIdentity identity = PosDeviceIdentity(
+      deviceId: 'kds-cuisine',
+      branchId: 'branch-1',
+      role: PosDeviceRole.kds,
+      label: 'Cuisine',
+    );
+
+    setUp(() {
+      store = SqlitePosStore.inMemory();
+      store.writeIdentity(identity);
+      const MenuSnapshot draft = MenuSnapshot(
+        version: 1,
+        branchId: 'branch-1',
+        declaredProductCount: 1,
+        products: <SnapshotProduct>[
+          SnapshotProduct(
+            productId: 'p-poulet',
+            nameFr: 'Poulet DG',
+            nameEn: 'Chicken DG',
+            basePrice: 3500,
+            type: 'dish',
+            available: true,
+          ),
+        ],
+        checksum: '',
+      );
+      final MenuSnapshot m = MenuSnapshot(
+        version: draft.version,
+        branchId: draft.branchId,
+        declaredProductCount: draft.declaredProductCount,
+        products: draft.products,
+        checksum: draft.computeChecksum(),
+      );
+      store.stageSnapshot(m, DateTime.utc(2026, 8, 19));
+      store.activateSnapshot(m.version, DateTime.utc(2026, 8, 19));
+      engine = PosEngine(store: store, identity: identity);
+      speaker = RecordingAlarmSink();
+    });
+
+    tearDown(() => store.close());
+
+    testWidgets('the expiry line and the alarm coexist, in French', (
+      tester,
+    ) async {
+      // The iPhone the cuisine runs on, landscape: 844 x 390 dp.
+      tester.view.physicalSize = const Size(2532, 1170);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      // One unclaimed ticket puts the alarm on screen…
+      engine.placeKioskOrder(
+        lines: const <PosCartLine>[
+          PosCartLine(productId: 'p-poulet', quantity: 1),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(speaker),
+          ],
+          child: const KdsApp(),
+        ),
+      );
+      await tester.pump();
+
+      // …and the sweep's summary line beside it is what tipped it over.
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(KdsBoardScreen)),
+      );
+      container.read(kdsBoardProvider.notifier).expireStaleUnpaid();
+      await tester.pump();
+
+      expect(find.text('Couper l\'alarme'), findsOneWidget);
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'the header overflowed with the expiry line and the alarm '
+            'both on screen — the stripe went through the mute button',
+      );
     });
   });
 }

@@ -38,11 +38,7 @@ class KdsBoardScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _Header(
-                  board: board,
-                  link: link,
-                  onMute: controller.muteAlarm,
-                ),
+                _Header(board: board, link: link, onMute: controller.muteAlarm),
                 const SizedBox(height: KdsScale.gapMd),
                 Expanded(
                   child: ListView(
@@ -110,21 +106,38 @@ class _Header extends StatelessWidget {
               const SizedBox.shrink(),
         ),
         const SizedBox(width: KdsScale.gapMd),
-        Text(
-          l10n.kdsBoardTitle,
-          style: theme.textTheme.headlineLarge?.copyWith(
-            fontSize: KdsScale.headlineSize,
-            fontWeight: FontWeight.w700,
+        // Flexible too. Everything on this row that is *words* gives way; the
+        // badge and the mute button are the only fixed things, because they are
+        // the only things a cook acts on.
+        Flexible(
+          child: Text(
+            l10n.kdsBoardTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.headlineLarge?.copyWith(
+              fontSize: KdsScale.headlineSize,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         const SizedBox(width: KdsScale.gapLg),
         // One summary line, never one alert per ticket: a board that shouts
         // eleven times while a cook is plating is a board the cook stops
         // hearing (§22.1).
+        // ⚠ **Flexible, not a bare `Text`.** This row holds the logo, the
+        // title, this line, the offline badge and *Couper l'alarme*, and on the
+        // 844 dp board it ran 44 px over the moment the expiry line and the
+        // alarm were on screen together — seen on the simulator, with the
+        // stripe drawn straight through the mute button. The sentence gives
+        // way; the control never does.
         if (board.expiredJustNow > 0)
-          Text(
-            l10n.kdsExpired(board.expiredJustNow),
-            style: theme.textTheme.labelLarge,
+          Flexible(
+            child: Text(
+              l10n.kdsExpired(board.expiredJustNow),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge,
+            ),
           ),
         const Spacer(),
         // ⚠ **The badge is not decoration.** A board that has silently lost the
@@ -177,11 +190,15 @@ class _Header extends StatelessWidget {
           ),
         if (board.lastError != null) const SizedBox(width: KdsScale.gapMd),
         if (board.lastError != null)
-          Text(
-            board.lastError!,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.error,
-              fontWeight: FontWeight.w700,
+          Flexible(
+            child: Text(
+              board.lastError!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
       ],
