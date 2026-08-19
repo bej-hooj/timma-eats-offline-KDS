@@ -204,14 +204,16 @@ void _codeStepFitsTests() {
     final ProviderContainer container = ProviderScope.containerOf(
       tester.element(find.byType(KdsPairingScreen)),
     );
-    container.read(kdsPairingProvider.notifier).select(
-      const HubAdvertisement(
-        endpoint: HubEndpoint(host: '192.168.1.245', port: 8801),
-        hubDeviceId: 'kiosk-door',
-        hubLabel: 'Borne (debug)',
-        branchId: '10000000-0000-4000-8000-000000000001',
-      ),
-    );
+    container
+        .read(kdsPairingProvider.notifier)
+        .select(
+          const HubAdvertisement(
+            endpoint: HubEndpoint(host: '192.168.1.245', port: 8801),
+            hubDeviceId: 'kiosk-door',
+            hubLabel: 'Borne (debug)',
+            branchId: '10000000-0000-4000-8000-000000000001',
+          ),
+        );
     await tester.pump();
 
     await tester.enterText(find.byType(TextField).first, '182531');
@@ -226,7 +228,8 @@ void _codeStepFitsTests() {
     expect(
       box.bottom,
       lessThanOrEqualTo(screen.height),
-      reason: 'the pairing action ran off the bottom of the board and the page '
+      reason:
+          'the pairing action ran off the bottom of the board and the page '
           'would not scroll to it — pairing was impossible from the product',
     );
     expect(tester.takeException(), isNull);

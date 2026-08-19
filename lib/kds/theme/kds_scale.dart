@@ -52,6 +52,20 @@ abstract final class KdsScale {
       return laneWidthMax;
     }
     final double share = (available - gapMd * (count - 1)) / count;
+    // ⚠ **The floor must not apply to the spine.** With a 200 dp minimum, four
+    // lanes needed 848 dp and the board has 796 — so the width silently
+    // clamped back up, the row overflowed, and *Prêtes* sat off the right edge
+    // behind a scroll again. The four spine lanes are the whole job of this
+    // screen: they fit whatever they are given. A floor only makes sense once
+    // *Programmées* or *En livraison* has joined them, where scrolling a
+    // genuinely crowded board is the honest answer.
+    if (count <= spineLaneCount) {
+      return share.clamp(0, laneWidthMax);
+    }
     return share.clamp(laneWidthMin, laneWidthMax);
   }
+
+  /// Kept here rather than imported from `KdsLane` so this file stays free of
+  /// domain imports; asserted equal to `KdsLane.spine.length` in the tests.
+  static const int spineLaneCount = 4;
 }

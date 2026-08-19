@@ -6,6 +6,7 @@ import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/domain/kds_lanes.dart';
 import 'package:timma_kds/kds/kds_app.dart';
 import 'package:timma_kds/kds/state/kds_board.dart';
+import 'package:timma_kds/kds/theme/kds_scale.dart';
 
 /// **A cook cannot cook a total.**
 ///
@@ -197,15 +198,24 @@ void main() {
     // ⚠ And all four are on screen at once. A fixed 320 dp column fitted 2.6
     // lanes on this board, so a cook had to scroll horizontally to see
     // *Prêtes* — the lane that says an order is ready to hand over.
+    // ⚠ Measured on the COLUMN, not on the title. A title sits at the start of
+    // its column, so its right edge fits long after the column itself has run
+    // off the screen — which is exactly how the first version of this
+    // assertion passed while the device showed *Prêtes* clipped in half.
     final double boardWidth =
         tester.view.physicalSize.width / tester.view.devicePixelRatio;
-    for (final String lane in <String>['Nouvelles', 'En préparation', 'Prêtes']) {
-      expect(
-        tester.getRect(find.text(lane)).right,
-        lessThanOrEqualTo(boardWidth),
-        reason: '\$lane must be readable without scrolling the board',
-      );
-    }
+    final Finder lastLane = find.ancestor(
+      of: find.text('Prêtes'),
+      matching: find.byType(Container),
+    );
+    expect(
+      tester.getRect(lastLane.first).right,
+      lessThanOrEqualTo(boardWidth),
+      reason:
+          'the last spine lane must be whole on screen — a cook cannot '
+          'scroll to find out an order is ready',
+    );
+    expect(KdsScale.spineLaneCount, KdsLane.spine.length);
   });
 
   test('a lane that holds something is always drawn', () {
