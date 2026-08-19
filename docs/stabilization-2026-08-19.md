@@ -140,3 +140,95 @@ tap anything.
 on the cuisine with its dish lines. The transport itself is proven over a real
 socket in `test/kds_link_test.dart` and was proven live on the emulator pair
 earlier today; what is unproven is only the Samsung's tap path.
+
+## S7 — the catalogue actually refreshes when online (owner: "very important")
+
+### Why it is inert today, exactly
+
+`pos_devices` holds **one** row for branch `10000000-…-0001`:
+`a3c7b786-9d7e-445c-89de-e02dc90a271c`, role `kiosk`, active, created
+2026-08-15 — and only its `key_hash`. The plaintext was never recorded, so no
+build can present it. `rpc_menu_snapshot` matches on
+`key_hash = encode(sha256(convert_to(p_device_key,'UTF8')),'hex')`
+(`20260815120000_kiosk_offline_store.sql:157`), so with no key the call cannot
+be made, `KioskCloudCatalog` falls back to the pinned/seeded menu, and the red
+`DEBUG — MENU D'EXEMPLE · PRIX NON RÉELS` ribbon is the honest consequence.
+The kiosk reads the key from `--dart-define=KIOSK_DEVICE_KEY` and keeps it in
+the platform keystore (`DeviceKeyVault`) from then on.
+
+### The write, stated before it is made
+
+⚠ Production. Owner asked for this on 2026-08-19 ("Very important to fix the
+Catalogue refresh when online").
+
+**Additive, not a rotation.** A new kiosk device row is INSERTed for the
+Samsung; the existing row is left exactly as it is. Overwriting its `key_hash`
+would be the smaller diff but it destroys the only record of a credential
+issued on 2026-08-15 — and a device nobody can identify might still hold it.
+Adding a row costs nothing and is reversible with one `active = false`.
+
+- Key: 32 random bytes, base64url, generated locally, **never committed**.
+- Stored: only `encode(sha256(...),'hex')`, which is all the RPC compares.
+- Recorded for the owner in `docs/setup-config.md` (gitignored) and handed over
+  in the session, per §11.1 — secrets live in the build config, not in git.
+
+### Then
+
+1. Rebuild the borne **without** `KIOSK_DEV_SEED_MENU` and **with**
+   `KIOSK_DEVICE_KEY`, so the seed cannot mask a failed fetch.
+2. Expect: the ribbon **gone**, real dishes, real prices, and — because
+   `20260818100000_kiosk_snapshot_categories.sql` is still **unapplied** — very
+   possibly still no category strip. Applying that migration is a second,
+   separate production decision; it is DDL and is not bundled with the key.
+3. Watch `[KioskCatalog]` in logcat: `no device key` must become a snapshot
+   version, and photos must still report `reused` (offline-first intact).
+
+### S7 result — the key works; the client parse does not
+
+**Done and verified server-side.** A new kiosk row was INSERTed for the Samsung
+(`f852570f-6d02-4835-8faf-3f8f5b7f8c4a`, additive — the 2026-08-15 row is
+untouched and still active). Calling `rpc_menu_snapshot` with the new plaintext
+returns the **real menu**: real dishes (*Jus de foléré*, *Poulet DG*), real
+prices, real `photo_url`s under the `catalog` bucket, and a `category_id` on
+every product. `device_unknown` is returned for a wrong key, as designed.
+
+The key itself is in the session's scratchpad, not in git. It must be recorded
+in `docs/setup-config.md` (gitignored) and re-passed as
+`--dart-define=KIOSK_DEVICE_KEY=…` on every borne build.
+
+**On the device the ribbon's cause is gone** — `[KioskCatalog] no device key`
+no longer appears, Supabase initialises, and the sync is attempted. It then
+logs `[KioskCatalog] a sync tick failed`, and that error is **deliberately
+swallowed** ("a cloud error can carry a request URL, and a request URL can
+carry a device key"). So the remaining work is client-side parsing, not auth.
+
+**Two concrete suspects, in order:**
+
+1. **The bundle carries `category_id` but no `categories` array.**
+   `20260818100000_kiosk_snapshot_categories.sql` is committed and **not
+   applied**, so the snapshot names no categories. That alone explains the
+   missing filter strip, and it may also fail `MenuSnapshot.validate()` if a
+   product references a category the bundle does not define.
+2. **`type` is `simple` / `composed`** in the live data, where the seed uses
+   `dish` / `drink`. If any client-side switch is exhaustive on those literals
+   the parse throws.
+
+**Next session starts here:** temporarily surface the swallowed error behind a
+debug-only flag (never in release — §11.1), read it once on the Samsung, then
+fix the parse. Do **not** re-issue a device key; one exists and works.
+
+### S8 — dish photographs on the cuisine's tickets (owner, 2026-08-19)
+
+The board renders dish names but no images. `BoardOrder.lines` carries
+`productId`, and the cuisine has no `DishPhotoCache` — the kiosk does. Two
+honest options, to decide before coding:
+
+- **Ship the photo URL on the line.** `PosOrderLine` has no `photoUrl`; adding
+  one is a `pos_core` change and moves both pins. The board would then use the
+  same disk-first `KioskDishThumb` grammar the kiosk uses.
+- **Give the cuisine its own cache** keyed by the branch's active snapshot,
+  warmed at pairing. Heavier, but it survives an outage the same way the
+  kiosk's does — which is the whole premise of this surface.
+
+⚠ Whichever is chosen, a kitchen tablet must never block a ticket on a network
+fetch: disk first, brand panel last, exactly as `KioskDishThumb` already does.
