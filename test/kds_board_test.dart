@@ -138,8 +138,10 @@ void main() {
       // Advancing an unpaid ticket is not a legal move; the board must not
       // offer it, and calling it anyway must not throw.
       c.read(kdsBoardProvider.notifier).advance(placed.order);
-      expect(store.findOrder(placed.order.clientId)!.status,
-          PosOrderStatus.pendingPayment);
+      expect(
+        store.findOrder(placed.order.clientId)!.status,
+        PosOrderStatus.pendingPayment,
+      );
     });
   });
 
@@ -214,11 +216,14 @@ void main() {
 
     test('it does not re-sound before the nag interval, and does after', () {
       final PlacedOrder placed = ring();
-      final Map<String, List<PosOrder>> lanes =
-          lanesWith(<PosOrder>[placed.order]);
+      final Map<String, List<PosOrder>> lanes = lanesWith(<PosOrder>[
+        placed.order,
+      ]);
 
-      expect(alarm.evaluate(lanes: lanes, now: t0)?.register,
-          KdsAlarmRegister.waiting);
+      expect(
+        alarm.evaluate(lanes: lanes, now: t0)?.register,
+        KdsAlarmRegister.waiting,
+      );
       expect(
         alarm.evaluate(lanes: lanes, now: t0.add(const Duration(seconds: 30))),
         isNull,
@@ -262,7 +267,8 @@ void main() {
       expect(
         cue?.register,
         KdsAlarmRegister.waiting,
-        reason: 'muting the current nag must not swallow the NEXT order — a '
+        reason:
+            'muting the current nag must not swallow the NEXT order — a '
             'kitchen that can silence itself for the night loses tickets',
       );
       expect(alarm.muted, isFalse);
@@ -278,8 +284,9 @@ void main() {
   });
 
   group('card identity — §1.6', () {
-    testWidgets('take cash and already paid are never confusable',
-        (tester) async {
+    testWidgets('take cash and already paid are never confusable', (
+      tester,
+    ) async {
       final PlacedOrder placed = ring();
       tester.view.physicalSize = const Size(2400, 1600);
       tester.view.devicePixelRatio = 2;
@@ -299,8 +306,10 @@ void main() {
       // Unpaid: the money state says so and the button asks for cash.
       expect(find.text('À encaisser'), findsWidgets);
       expect(find.text('Borne'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Encaisser en espèces'),
-          findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Encaisser en espèces'),
+        findsOneWidget,
+      );
 
       await tester.tap(
         find.widgetWithText(FilledButton, 'Encaisser en espèces'),
@@ -312,7 +321,8 @@ void main() {
       expect(
         find.widgetWithText(FilledButton, 'Encaisser en espèces'),
         findsNothing,
-        reason: 'a paid ticket must never offer a cash button again — that is '
+        reason:
+            'a paid ticket must never offer a cash button again — that is '
             'how a customer gets asked to pay twice',
       );
       expect(find.widgetWithText(FilledButton, 'Accepter'), findsOneWidget);
@@ -414,7 +424,8 @@ void _headerFitsTests() {
       expect(
         tester.takeException(),
         isNull,
-        reason: 'the header overflowed with the expiry line and the alarm '
+        reason:
+            'the header overflowed with the expiry line and the alarm '
             'both on screen — the stripe went through the mute button',
       );
     });

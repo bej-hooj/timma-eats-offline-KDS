@@ -153,4 +153,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get kdsPairErrorStore =>
       'Impossible d\'enregistrer la clé de sécurité sur cette tablette.';
+
+  @override
+  String get kdsRepairTitle => 'Apparier une autre borne';
+
+  @override
+  String get kdsRepairBody =>
+      'Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez saisir un nouveau code d\'appairage.';
+
+  @override
+  String get kdsRepairCancel => 'Annuler';
+
+  @override
+  String get kdsRepairConfirm => 'Apparier à nouveau';
 }

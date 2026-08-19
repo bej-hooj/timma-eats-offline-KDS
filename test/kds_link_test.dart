@@ -114,7 +114,8 @@ void main() {
         ),
         kdsAlarmSinkProvider.overrideWithValue(speaker),
         kdsIntentPublisherProvider.overrideWith(
-          (Ref ref) => () => ref.read(kdsLinkProvider.notifier).pump(),
+          (Ref ref) =>
+              () => ref.read(kdsLinkProvider.notifier).pump(),
         ),
       ],
     );
@@ -164,7 +165,8 @@ void main() {
     expect(
       remembered,
       isNotNull,
-      reason: 'a board that forgets the address comes back from a restart '
+      reason:
+          'a board that forgets the address comes back from a restart '
           'fully provisioned and unable to connect to anything',
     );
     expect(remembered!.host, endpoint.host);
@@ -200,7 +202,9 @@ void main() {
 
     // A customer buys a chicken at the kiosk.
     final PlacedOrder placed = hubEngine.placeKioskOrder(
-      lines: const <PosCartLine>[PosCartLine(productId: 'p-poulet', quantity: 1)],
+      lines: const <PosCartLine>[
+        PosCartLine(productId: 'p-poulet', quantity: 1),
+      ],
     );
     server.publishBoard();
 
@@ -214,13 +218,17 @@ void main() {
       within: _beforeTheTimers,
     );
 
-    final PosOrder arrived = c.read(kdsBoardProvider).lane(KdsLane.counter).single;
+    final PosOrder arrived = c
+        .read(kdsBoardProvider)
+        .lane(KdsLane.counter)
+        .single;
     expect(arrived.clientId, placed.order.clientId);
     expect(arrived.total, 4500);
     expect(
       speaker.rung,
       contains(KdsAlarmRegister.waiting),
-      reason: 'THE ALARM. A ticket that lands in silence is a ticket the '
+      reason:
+          'THE ALARM. A ticket that lands in silence is a ticket the '
           'kitchen finds when the customer asks for it',
     );
   });
@@ -232,7 +240,9 @@ void main() {
     c.read(kdsBoardProvider);
 
     final PlacedOrder placed = hubEngine.placeKioskOrder(
-      lines: const <PosCartLine>[PosCartLine(productId: 'p-poulet', quantity: 1)],
+      lines: const <PosCartLine>[
+        PosCartLine(productId: 'p-poulet', quantity: 1),
+      ],
     );
     final String id = placed.order.clientId;
     server.publishBoard();
@@ -254,7 +264,8 @@ void main() {
     c.read(kdsBoardProvider.notifier).advance(hubStore.findOrder(id)!);
     await until(
       () => hubStore.findOrder(id)!.status == PosOrderStatus.accepted,
-      reason: 'a transition tapped in the kitchen never reached the kiosk — '
+      reason:
+          'a transition tapped in the kitchen never reached the kiosk — '
           'the outbox was written and nothing drained it',
       within: _beforeTheTimers,
     );
@@ -267,7 +278,9 @@ void main() {
     c.read(kdsBoardProvider);
 
     hubEngine.placeKioskOrder(
-      lines: const <PosCartLine>[PosCartLine(productId: 'p-poulet', quantity: 1)],
+      lines: const <PosCartLine>[
+        PosCartLine(productId: 'p-poulet', quantity: 1),
+      ],
     );
     server.publishBoard();
     await until(
@@ -283,7 +296,9 @@ void main() {
 
     // A second customer, while the first ticket is still unclaimed.
     hubEngine.placeKioskOrder(
-      lines: const <PosCartLine>[PosCartLine(productId: 'p-poulet', quantity: 2)],
+      lines: const <PosCartLine>[
+        PosCartLine(productId: 'p-poulet', quantity: 2),
+      ],
     );
     server.publishBoard();
     await until(

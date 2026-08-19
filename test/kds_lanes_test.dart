@@ -63,7 +63,8 @@ void main() {
       expect(
         KdsLane.advanceFor(accepted.status, accepted.mode),
         PosOrderStatus.preparing,
-        reason: 'a lane is a presentation choice; a transition is a '
+        reason:
+            'a lane is a presentation choice; a transition is a '
             'state-machine fact',
       );
     });
@@ -82,7 +83,10 @@ void main() {
         PosOrderStatus.completed,
       );
       expect(
-        KdsLane.advanceFor(PosOrderStatus.outForDelivery, PosOrderMode.delivery),
+        KdsLane.advanceFor(
+          PosOrderStatus.outForDelivery,
+          PosOrderMode.delivery,
+        ),
         PosOrderStatus.completed,
       );
     });
@@ -91,7 +95,8 @@ void main() {
       expect(
         KdsLane.advanceFor(PosOrderStatus.pendingPayment, PosOrderMode.pickup),
         isNull,
-        reason: 'offering a cook an advance on an unpaid ticket is how food '
+        reason:
+            'offering a cook an advance on an unpaid ticket is how food '
             'leaves the building without being paid for',
       );
     });
@@ -119,7 +124,8 @@ void main() {
           expect(
             StatusGuard.allows(from: status, to: to, mode: mode),
             isTrue,
-            reason: '$status → $to (mode $mode) is offered by the board but '
+            reason:
+                '$status → $to (mode $mode) is offered by the board but '
                 'refused by the guard',
           );
         }
@@ -154,16 +160,13 @@ void main() {
     });
 
     test('the board buckets every open ticket and keeps empty lanes', () {
-      final Map<String, List<PosOrder>> board = KdsLane.board(
-        <PosOrder>[
-          order(status: PosOrderStatus.pendingPayment, clientId: 'a'),
-          order(status: PosOrderStatus.placed, clientId: 'b'),
-          order(status: PosOrderStatus.accepted, clientId: 'c'),
-          order(status: PosOrderStatus.preparing, clientId: 'd'),
-          order(status: PosOrderStatus.completed, clientId: 'e'),
-        ],
-        now: now,
-      );
+      final Map<String, List<PosOrder>> board = KdsLane.board(<PosOrder>[
+        order(status: PosOrderStatus.pendingPayment, clientId: 'a'),
+        order(status: PosOrderStatus.placed, clientId: 'b'),
+        order(status: PosOrderStatus.accepted, clientId: 'c'),
+        order(status: PosOrderStatus.preparing, clientId: 'd'),
+        order(status: PosOrderStatus.completed, clientId: 'e'),
+      ], now: now);
       expect(board.keys, containsAll(KdsLane.all));
       expect(board[KdsLane.counter], hasLength(1));
       expect(board[KdsLane.newTickets], hasLength(1));
@@ -177,21 +180,18 @@ void main() {
     });
 
     test('oldest first — the ticket that waited longest is the one owed', () {
-      final Map<String, List<PosOrder>> board = KdsLane.board(
-        <PosOrder>[
-          order(
-            status: PosOrderStatus.placed,
-            clientId: 'newer',
-            placedAt: now.subtract(const Duration(minutes: 2)),
-          ),
-          order(
-            status: PosOrderStatus.placed,
-            clientId: 'older',
-            placedAt: now.subtract(const Duration(minutes: 20)),
-          ),
-        ],
-        now: now,
-      );
+      final Map<String, List<PosOrder>> board = KdsLane.board(<PosOrder>[
+        order(
+          status: PosOrderStatus.placed,
+          clientId: 'newer',
+          placedAt: now.subtract(const Duration(minutes: 2)),
+        ),
+        order(
+          status: PosOrderStatus.placed,
+          clientId: 'older',
+          placedAt: now.subtract(const Duration(minutes: 20)),
+        ),
+      ], now: now);
       expect(
         board[KdsLane.newTickets]!.map((PosOrder o) => o.clientId),
         <String>['older', 'newer'],

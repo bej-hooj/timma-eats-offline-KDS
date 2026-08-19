@@ -361,6 +361,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible d\'enregistrer la clé de sécurité sur cette tablette.'**
   String get kdsPairErrorStore;
+
+  /// No description provided for @kdsRepairTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparier une autre borne'**
+  String get kdsRepairTitle;
+
+  /// No description provided for @kdsRepairBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez saisir un nouveau code d\'appairage.'**
+  String get kdsRepairBody;
+
+  /// No description provided for @kdsRepairCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get kdsRepairCancel;
+
+  /// No description provided for @kdsRepairConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparier à nouveau'**
+  String get kdsRepairConfirm;
 }
 
 class _AppLocalizationsDelegate

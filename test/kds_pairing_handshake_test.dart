@@ -212,7 +212,8 @@ void main() {
     expect(
       c.read(kdsPairingProvider).error,
       KdsPairingError.badCode,
-      reason: 'the hub cannot tell a superseded window from wrong digits, and '
+      reason:
+          'the hub cannot tell a superseded window from wrong digits, and '
           'must not leak which — so the message covers both',
     );
   });
@@ -258,7 +259,8 @@ void main() {
     expect(
       c.read(kdsPairingProvider).error,
       KdsPairingError.expired,
-      reason: 'the remedy is "ask the borne for a new code", not "check the '
+      reason:
+          'the remedy is "ask the borne for a new code", not "check the '
           'wifi" — the kiosk is answering perfectly well',
     );
   });

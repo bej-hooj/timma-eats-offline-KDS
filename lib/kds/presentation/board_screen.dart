@@ -38,7 +38,12 @@ class KdsBoardScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                _Header(board: board, link: link, onMute: controller.muteAlarm),
+                _Header(
+                  board: board,
+                  link: link,
+                  onMute: controller.muteAlarm,
+                  onRepair: () => _confirmRepair(context, ref),
+                ),
                 const SizedBox(height: KdsScale.gapMd),
                 Expanded(
                   child: ListView(
@@ -66,6 +71,40 @@ class KdsBoardScreen extends ConsumerWidget {
     );
   }
 
+  /// ⚠ **The board must never be a dead end.** A tablet whose kiosk was
+  /// replaced, or one a manager wants to move to a different kiosk, had no
+  /// route back to the pairing screen from the product — the only way out was
+  /// to reinstall the app, and on iOS even that does not clear the keychain.
+  /// The kiosk has had a long-press manager gate since K8; the board now has
+  /// the same gesture, for the same reason.
+  static Future<void> _confirmRepair(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final bool? yes = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text(l10n.kdsRepairTitle),
+        content: Text(l10n.kdsRepairBody),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.kdsRepairCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.kdsRepairConfirm),
+          ),
+        ],
+      ),
+    );
+    if (yes ?? false) {
+      await ref.read(kdsLinkProvider.notifier).stop();
+      ref.read(kdsIdentityProvider.notifier).requirePairing();
+    }
+  }
+
   static String _laneTitle(AppLocalizations l10n, String lane) =>
       switch (lane) {
         KdsLane.counter => l10n.kdsLaneCounter,
@@ -82,11 +121,13 @@ class _Header extends StatelessWidget {
     required this.board,
     required this.link,
     required this.onMute,
+    required this.onRepair,
   });
 
   final KdsBoardState board;
   final KdsLinkState link;
   final VoidCallback onMute;
+  final VoidCallback onRepair;
 
   @override
   Widget build(BuildContext context) {
@@ -98,12 +139,30 @@ class _Header extends StatelessWidget {
         // identifiable at a glance. Sized to the header's own type scale rather
         // than to a constant, and it degrades to nothing rather than to a
         // broken-image box — the board's job is tickets, not branding.
-        Image.asset(
-          'assets/branding/logo_inline.png',
-          height: KdsScale.headlineSize,
-          fit: BoxFit.contain,
-          errorBuilder: (BuildContext _, Object _, StackTrace? _) =>
-              const SizedBox.shrink(),
+        // The logo is the gate. Long press, like the kiosk's — a gesture a
+        // cook will not hit by accident and a manager can be told once.
+        GestureDetector(
+          onLongPress: onRepair,
+          behavior: HitTestBehavior.opaque,
+          // ⚠ The target is sized here, not by the logo. The image degrades to
+          // `SizedBox.shrink()` when the asset cannot be decoded, and a
+          // zero-sized escape hatch is no escape hatch — the one gesture that
+          // rescues a board from a kiosk that no longer knows it would vanish
+          // with the artwork. A touch target the manager can find exists
+          // whether or not there is a picture in it.
+          child: SizedBox(
+            width: KdsScale.minTarget,
+            height: KdsScale.minTarget,
+            child: Center(
+              child: Image.asset(
+                'assets/branding/logo_inline.png',
+                height: KdsScale.headlineSize,
+                fit: BoxFit.contain,
+                errorBuilder: (BuildContext _, Object _, StackTrace? _) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+          ),
         ),
         const SizedBox(width: KdsScale.gapMd),
         // Flexible too. Everything on this row that is *words* gives way; the

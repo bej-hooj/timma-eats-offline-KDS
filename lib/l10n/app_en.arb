@@ -63,5 +63,9 @@
   "kdsPairErrorExpired": "Code expired. Ask the kiosk for a new one.",
   "kdsPairErrorNotFound": "No kiosk found. Check both devices are on the same wifi.",
   "kdsPairErrorUnreachable": "Kiosk unreachable. Check the wifi and the address.",
-  "kdsPairErrorStore": "This tablet could not store the security key."
+  "kdsPairErrorStore": "This tablet could not store the security key.",
+  "kdsRepairTitle": "Pair with another kiosk",
+  "kdsRepairBody": "This kitchen will stop receiving orders from the current kiosk. You will need to enter a new pairing code.",
+  "kdsRepairCancel": "Cancel",
+  "kdsRepairConfirm": "Pair again"
 }

@@ -236,17 +236,63 @@ final Provider<PosStore> kdsStoreProvider = Provider<PosStore>(
   ),
 );
 
+/// **Does this board still belong to a kiosk?**
+///
+/// ⚠ An identity in the local database is NOT the same thing as being paired,
+/// and treating it as such is what stranded a real tablet. An iOS reinstall
+/// keeps the app's Documents directory, so `kds.db` — and the identity in it —
+/// survives; the keychain survives too. Meanwhile the kiosk had been
+/// reinstalled and had never heard of that device. The board therefore looked
+/// paired, went straight to the lanes, and sat there for ever: the kiosk sent
+/// it nothing, and **the board offered no way back to the pairing screen**.
+/// There was no route out of that state from the product at all.
+///
+/// So the hub's own answer decides. When it refuses this board's credential —
+/// `unauthenticated`, `bad_signature` — the board is not paired, whatever its
+/// database says, and it goes back to asking for six digits.
+abstract final class KdsPairingGate {
+  static const String _key = 'pairing.required';
+
+  /// The kiosk refused us, or a manager asked to move this board. Either way
+  /// the identity on disk is no longer a claim to anything.
+  static void require(PosStore store) => store.writeMeta(_key, '1');
+
+  static void satisfied(PosStore store) => store.writeMeta(_key, '');
+
+  static bool isRequired(PosStore store) => store.readMeta(_key) == '1';
+}
+
 /// This board's identity, or null until it has been paired.
 ///
 /// Held in a provider rather than read once at startup so the app can move from
 /// the pairing screen to the board without the manager restarting anything.
 class KdsIdentityController extends Notifier<PosDeviceIdentity?> {
   @override
-  PosDeviceIdentity? build() => ref.read(kdsStoreProvider).readIdentity();
+  PosDeviceIdentity? build() {
+    final PosStore store = ref.read(kdsStoreProvider);
+    // A board the kiosk has refused presents as unpaired, so the shell shows
+    // pairing instead of a set of lanes nothing will ever fill.
+    return KdsPairingGate.isRequired(store) ? null : store.readIdentity();
+  }
 
   /// Called once, by pairing, after the credential and branch secret are safely
   /// stored. Reads back from the store rather than trusting what it was handed.
-  void adopt() => state = ref.read(kdsStoreProvider).readIdentity();
+  void adopt() {
+    final PosStore store = ref.read(kdsStoreProvider);
+    KdsPairingGate.satisfied(store);
+    state = store.readIdentity();
+  }
+
+  /// Send this board back to the pairing screen.
+  ///
+  /// Called by the link when the kiosk refuses the credential, and by a manager
+  /// moving the board to a different kiosk. The identity row is left where it
+  /// is — a successful pairing overwrites it — so nothing is destroyed by a
+  /// misfire; only the claim to be in service is dropped.
+  void requirePairing() {
+    KdsPairingGate.require(ref.read(kdsStoreProvider));
+    state = null;
+  }
 }
 
 final NotifierProvider<KdsIdentityController, PosDeviceIdentity?>

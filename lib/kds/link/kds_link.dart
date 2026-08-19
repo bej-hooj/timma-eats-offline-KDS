@@ -181,6 +181,22 @@ class KdsLinkController extends Notifier<KdsLinkState> {
     try {
       await transport.connect();
       await pump();
+    } on LinkProtocolException catch (error) {
+      // ⚠ **A refusal is not an outage.** The kiosk answered, and its answer
+      // was "I have never heard of you" — which is exactly what a reinstalled
+      // kiosk says to a board whose identity survived in `kds.db`. Retrying
+      // that for ever is how a tablet ends up parked on empty lanes with no
+      // route back to the pairing screen. It is unpaired; it should say so.
+      if (error.code == LinkProtocolErrorCode.unauthenticated ||
+          error.code == LinkProtocolErrorCode.badSignature) {
+        debugPrint('[KdsLink] the kiosk refused this board — pairing again');
+        await stop();
+        if (!_disposed) {
+          ref.read(kdsIdentityProvider.notifier).requirePairing();
+        }
+        return;
+      }
+      debugPrint('[KdsLink] hub not reachable yet — will keep retrying');
     } on Object {
       // Counted by the link monitor and rendered as the offline badge. Not
       // surfaced as an error string: "connection refused" is not something a
@@ -198,17 +214,20 @@ class KdsLinkController extends Notifier<KdsLinkState> {
     try {
       final NsdHubDiscovery discovery = NsdHubDiscovery();
       _discovery = discovery;
-      _browse = discovery.discover().listen((HubAdvertisement hub) {
-        // **Only this board's own restaurant.** A shared building with two
-        // TIMMA kiosks on one wifi must never cross-wire two kitchens.
-        if (hub.branchId == branchId && !found.isCompleted) {
-          found.complete(hub.endpoint);
-        }
-      }, onError: (Object _) {
-        if (!found.isCompleted) {
-          found.complete(null);
-        }
-      });
+      _browse = discovery.discover().listen(
+        (HubAdvertisement hub) {
+          // **Only this board's own restaurant.** A shared building with two
+          // TIMMA kiosks on one wifi must never cross-wire two kitchens.
+          if (hub.branchId == branchId && !found.isCompleted) {
+            found.complete(hub.endpoint);
+          }
+        },
+        onError: (Object _) {
+          if (!found.isCompleted) {
+            found.complete(null);
+          }
+        },
+      );
       final HubEndpoint? endpoint = await found.future.timeout(
         const Duration(seconds: 8),
         onTimeout: () => null,

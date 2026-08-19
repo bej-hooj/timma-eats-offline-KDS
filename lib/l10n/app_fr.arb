@@ -63,5 +63,9 @@
   "kdsPairErrorExpired": "Code expiré. Demandez-en un nouveau sur la borne.",
   "kdsPairErrorNotFound": "Aucune borne trouvée. Vérifiez que les deux appareils sont sur le même wifi.",
   "kdsPairErrorUnreachable": "Borne injoignable. Vérifiez le wifi et l'adresse.",
-  "kdsPairErrorStore": "Impossible d'enregistrer la clé de sécurité sur cette tablette."
+  "kdsPairErrorStore": "Impossible d'enregistrer la clé de sécurité sur cette tablette.",
+  "kdsRepairTitle": "Apparier une autre borne",
+  "kdsRepairBody": "Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez saisir un nouveau code d'appairage.",
+  "kdsRepairCancel": "Annuler",
+  "kdsRepairConfirm": "Apparier à nouveau"
 }

@@ -152,4 +152,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get kdsPairErrorStore =>
       'This tablet could not store the security key.';
+
+  @override
+  String get kdsRepairTitle => 'Pair with another kiosk';
+
+  @override
+  String get kdsRepairBody =>
+      'This kitchen will stop receiving orders from the current kiosk. You will need to enter a new pairing code.';
+
+  @override
+  String get kdsRepairCancel => 'Cancel';
+
+  @override
+  String get kdsRepairConfirm => 'Pair again';
 }

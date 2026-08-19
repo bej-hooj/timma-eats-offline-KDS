@@ -49,7 +49,8 @@ Future<void> main() async {
         // would refresh a board no screen was watching, and the kitchen would
         // stay blank while every log line said the order had been merged.
         kdsIntentPublisherProvider.overrideWith(
-          (Ref ref) => () => unawaited(ref.read(kdsLinkProvider.notifier).pump()),
+          (Ref ref) =>
+              () => unawaited(ref.read(kdsLinkProvider.notifier).pump()),
         ),
       ],
       child: const _BoardWithLink(),
