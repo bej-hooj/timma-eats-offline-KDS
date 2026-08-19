@@ -17,12 +17,21 @@ import '../../theme/kds_scale.dart';
 class KdsTicketCard extends StatelessWidget {
   const KdsTicketCard({
     required this.order,
+    required this.lines,
     required this.now,
     required this.onPrimaryAction,
     super.key,
   });
 
   final PosOrder order;
+
+  /// ⚠ **What the customer actually ordered.** The card showed a ticket number
+  /// and a total; a cook cannot cook a total, and the kitchen was reading the
+  /// board and then asking the counter what was in the order. The lines have
+  /// been arriving on the wire since K3 — `BoardOrder` carries them — and this
+  /// card discarded them.
+  final List<PosOrderLine> lines;
+
   final DateTime now;
 
   /// Settle for an unpaid counter ticket, advance for anything else. Null when
@@ -36,6 +45,7 @@ class KdsTicketCard extends StatelessWidget {
     final KdsUrgency urgency = KdsSla.urgencyOf(order, now);
     final int waited = now.difference(KdsSla.agedFrom(order)).inMinutes;
     final bool paid = order.paymentStatus == PosPaymentStatus.paid;
+    final bool french = Localizations.localeOf(context).languageCode == 'fr';
 
     return Card(
       margin: const EdgeInsets.only(bottom: KdsScale.gapMd),
@@ -95,6 +105,33 @@ class KdsTicketCard extends StatelessWidget {
                 l10n.kdsTicket(order.ticketNumber!),
                 style: theme.textTheme.titleLarge,
               ),
+            if (lines.isNotEmpty) ...<Widget>[
+              const SizedBox(height: KdsScale.gapMd),
+              for (final PosOrderLine line in lines)
+                _Line(line: line, french: french),
+            ],
+            if (order.note != null &&
+                order.note!.trim().isNotEmpty) ...<Widget>[
+              const SizedBox(height: KdsScale.gap),
+              // A note is an instruction from a person, not decoration: it is
+              // given its own emphasis so it cannot be skimmed past.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(KdsScale.gap),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(KdsScale.gap),
+                ),
+                child: Text(
+                  order.note!.trim(),
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontSize: KdsScale.labelSize,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: KdsScale.gap),
             Text(
               MoneyFormatter.formatXaf(order.total),
@@ -181,6 +218,79 @@ class _Chip extends StatelessWidget {
             color: textColor,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// One ordered line, as a cook needs to read it across a kitchen.
+///
+/// **Quantity first and heavy**, because "2 ×" mis-read as "1 ×" is a remake.
+/// The variant and the chosen options sit under the name, indented and lighter:
+/// they qualify the dish rather than being separate work, and a cook scanning a
+/// rush reads the dish names down the card first.
+class _Line extends StatelessWidget {
+  const _Line({required this.line, required this.french});
+
+  final PosOrderLine line;
+  final bool french;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String? variant = french ? line.variantNameFr : line.variantNameEn;
+    final List<String> options = <String>[
+      for (final PosLineModifier m in line.modifiers)
+        m.quantity > 1
+            ? '${m.quantity} × ${french ? m.nameFr : m.nameEn}'
+            : (french ? m.nameFr : m.nameEn),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: KdsScale.gap),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 44,
+            child: Text(
+              '${line.quantity} ×',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontSize: KdsScale.bodySize,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  french ? line.nameFr : line.nameEn,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontSize: KdsScale.bodySize,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (variant != null && variant.isNotEmpty)
+                  Text(
+                    variant,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                if (options.isNotEmpty)
+                  Text(
+                    options.join(' · '),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

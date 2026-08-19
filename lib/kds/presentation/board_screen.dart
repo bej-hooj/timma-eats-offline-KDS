@@ -46,21 +46,32 @@ class KdsBoardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: KdsScale.gapMd),
                 Expanded(
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: <Widget>[
-                      for (final String lane in KdsLane.all)
-                        _Lane(
-                          title: _laneTitle(l10n, lane),
-                          orders: board.lane(lane),
-                          now: board.now,
-                          emptyLabel: l10n.kdsLaneEmpty,
-                          onAction: (PosOrder order) =>
-                              order.status == PosOrderStatus.pendingPayment
-                              ? controller.settleCash(order.clientId)
-                              : controller.advance(order),
-                        ),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints box) {
+                      final List<String> lanes = KdsLane.visible(board.lanes);
+                      final double width = KdsScale.laneWidthFor(
+                        available: box.maxWidth,
+                        count: lanes.length,
+                      );
+                      return ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: <Widget>[
+                          for (final String lane in lanes)
+                            _Lane(
+                              width: width,
+                              title: _laneTitle(l10n, lane),
+                              orders: board.lane(lane),
+                              linesOf: board.linesOf,
+                              now: board.now,
+                              emptyLabel: l10n.kdsLaneEmpty,
+                              onAction: (PosOrder order) =>
+                                  order.status == PosOrderStatus.pendingPayment
+                                  ? controller.settleCash(order.clientId)
+                                  : controller.advance(order),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -267,15 +278,19 @@ class _Header extends StatelessWidget {
 
 class _Lane extends StatelessWidget {
   const _Lane({
+    required this.width,
     required this.title,
     required this.orders,
+    required this.linesOf,
     required this.now,
     required this.emptyLabel,
     required this.onAction,
   });
 
+  final double width;
   final String title;
   final List<PosOrder> orders;
+  final List<PosOrderLine> Function(String clientId) linesOf;
   final DateTime now;
   final String emptyLabel;
   final void Function(PosOrder order) onAction;
@@ -284,7 +299,7 @@ class _Lane extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Container(
-      width: KdsScale.laneWidth,
+      width: width,
       margin: const EdgeInsets.only(right: KdsScale.gapMd),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,6 +340,7 @@ class _Lane extends StatelessWidget {
                           KdsLane.advanceFor(order.status, order.mode) != null;
                       return KdsTicketCard(
                         order: order,
+                        lines: linesOf(order.clientId),
                         now: now,
                         onPrimaryAction: actionable
                             ? () => onAction(order)

@@ -16,12 +16,25 @@ class KdsBoardState {
   const KdsBoardState({
     required this.lanes,
     required this.now,
+    this.lines = const <String, List<PosOrderLine>>{},
     this.lastError,
     this.expiredJustNow = 0,
     this.alarmMuted = false,
   });
 
   final Map<String, List<PosOrder>> lanes;
+
+  /// What was actually ordered, per `clientId`.
+  ///
+  /// ⚠ **The board used to show a ticket number and a total and nothing else.**
+  /// A cook cannot cook a total. The lines have been on the wire the whole time
+  /// — `BoardOrder` carries them and the merge writes them to the local store —
+  /// and the card simply threw them away. Read here, once per refresh, so the
+  /// card stays a pure function of its inputs.
+  final Map<String, List<PosOrderLine>> lines;
+
+  List<PosOrderLine> linesOf(String clientId) =>
+      lines[clientId] ?? const <PosOrderLine>[];
 
   /// The clock every card ages against, held in state so a rebuild does not
   /// silently re-age the board mid-frame.
@@ -118,6 +131,11 @@ class KdsBoardController extends Notifier<KdsBoardState> {
     return KdsBoardState(
       lanes: lanes,
       now: now,
+      lines: <String, List<PosOrderLine>>{
+        for (final List<PosOrder> lane in lanes.values)
+          for (final PosOrder order in lane)
+            order.clientId: _engine.store.linesOf(order.clientId),
+      },
       lastError: error,
       expiredJustNow: _expiredJustNow,
       alarmMuted: _alarm.muted,

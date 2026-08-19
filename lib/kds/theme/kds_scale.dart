@@ -31,7 +31,27 @@ abstract final class KdsScale {
 
   static const double radius = 16;
 
-  /// One lane column. Six lanes on a 1200-logical tablet means horizontal
-  /// scrolling is expected and fine — a cook swipes to the lane they work.
-  static const double laneWidth = 320;
+  /// The widest a lane column should ever be, on a big kitchen tablet.
+  static const double laneWidthMax = 320;
+
+  /// The narrowest a lane may be squeezed to before scrolling is the better
+  /// answer. Below this a ticket's dish names start wrapping to three lines and
+  /// the card stops being readable across a kitchen.
+  static const double laneWidthMin = 200;
+
+  /// How wide each column should be so [count] lanes fill [available].
+  ///
+  /// ⚠ **A fixed 320 fitted 2.6 lanes on the board this ships on.** The cuisine
+  /// is 844 dp wide in landscape, so a cook had to scroll horizontally to see
+  /// *Prêtes* — the lane that says an order is ready to hand over. A board you
+  /// scroll to read is a board that gets read late. The columns now divide the
+  /// width they are given, down to [laneWidthMin]; past that scrolling returns,
+  /// which is the right answer for a genuinely crowded board.
+  static double laneWidthFor({required double available, required int count}) {
+    if (count <= 0) {
+      return laneWidthMax;
+    }
+    final double share = (available - gapMd * (count - 1)) / count;
+    return share.clamp(laneWidthMin, laneWidthMax);
+  }
 }

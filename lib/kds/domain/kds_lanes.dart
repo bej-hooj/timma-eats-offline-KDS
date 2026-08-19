@@ -44,6 +44,35 @@ abstract final class KdsLane {
     outForDelivery,
   ];
 
+  /// **The take-away spine.** Every order rung at the borne travels exactly
+  /// this path, and it is the same path a McDonald's board shows: pay, land,
+  /// cook, collect. These four always render, empty or not — a cook has to be
+  /// able to see where a ticket goes *next*, so an empty *Prêtes* at 10:00 is
+  /// information, not clutter.
+  static const List<String> spine = <String>[
+    counter,
+    newTickets,
+    preparing,
+    ready,
+  ];
+
+  /// Which lanes to draw, given what is actually on the board.
+  ///
+  /// ⚠ **A lane that cannot receive anything is noise that costs real work.**
+  /// Six fixed columns at [KdsScale.laneWidth] on an 844 dp board means a cook
+  /// scrolls past two permanently empty ones to reach the tickets. *Programmées*
+  /// can never fill at all today — `PosOrder` carries no fire time — and *En
+  /// livraison* is meaningless for a customer who ordered at the counter and is
+  /// standing there waiting. Both hold orders that came from the app or the web,
+  /// so both appear **only while they hold one**, and disappear when they empty.
+  ///
+  /// Order is preserved from [all]: the board's left-to-right reading is a
+  /// promise, and lanes must not swap places under a cook's hand.
+  static List<String> visible(Map<String, List<PosOrder>> lanes) => <String>[
+    for (final String lane in all)
+      if (spine.contains(lane) || (lanes[lane]?.isNotEmpty ?? false)) lane,
+  ];
+
   /// The transition a one-tap button performs, decided by the card's **STATUS**
   /// — never by the lane it happens to be drawn in.
   ///

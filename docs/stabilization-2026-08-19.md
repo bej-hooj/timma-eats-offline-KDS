@@ -35,6 +35,19 @@ continues) and `timma-eats-offline-KDS/docs/board-link-and-alarm-2026-08-18.md`.
   options, note. The board is the surface a cook *works from*; a ticket without
   dishes is not a ticket. Data already arrives; this is presentation only, so it
   is the cheapest large win and cannot break the transport.
+- **S1b — the lanes are smart.** Owner: *"the pipeline column should be
+  smart… what the fuck with the column en livraison yet its something client
+  get there and go… like mcdonald"*. Right. A take-away kiosk has one spine —
+  **À encaisser → Nouvelles → En préparation → Prêtes** — and that is what
+  McDonald's boards show. *Programmées* can never fill (`PosOrder` has no
+  `fire_at`) and *En livraison* is meaningless for a customer standing at the
+  counter. Six fixed lanes at 320 dp on an 844 dp board also means a cook
+  scrolls past two empty columns to reach real work. So: the four spine lanes
+  always render; *Programmées* and *En livraison* appear **only when they hold
+  something**, because those orders come from the app or the web, not from the
+  borne. An empty lane that can still receive work stays (a cook must see where
+  a ticket goes next); a lane that cannot is noise.
+
 - **S2 — categories on the borne.** Give the seeded menu real categories
   (Plats / Accompagnements / Boissons) so the strip renders on the debug build
   the way it will on a real bundle. No production write.
