@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_link/pos_link.dart';
+import 'package:timma_kds/l10n/app_localizations.dart';
 import 'package:timma_kds/kds/kds_root.dart';
 import 'package:timma_kds/kds/pairing/pairing_controller.dart';
 import 'package:timma_kds/kds/pairing/pairing_screen.dart';
@@ -16,6 +18,7 @@ import 'package:timma_kds/kds/state/kds_board.dart';
 /// no identity means the pairing screen, an identity means the board, and the
 /// switch happens without anyone restarting the app.
 void main() {
+  _codeStepFitsTests();
   late PosStore store;
 
   setUp(() => store = SqlitePosStore.inMemory());
@@ -156,5 +159,76 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: 'overflow at $size');
     }
+  });
+}
+
+/// The code step must FIT the board it ships on.
+///
+/// ⚠ Reported from the device: at 844 x 390 — a phone-sized board in landscape,
+/// which is exactly what the cuisine runs on — the title, subtitle, kiosk card,
+/// prompt, the big code field and the button did not fit, and the page would
+/// not scroll to the button either. *Apparier* could not be reached at all, so
+/// pairing was impossible from the product. A widget test that only asserts the
+/// button EXISTS would have passed the whole time; this one asserts it is on
+/// screen.
+void _codeStepFitsTests() {
+  testWidgets('Apparier is reachable on a landscape board, in French', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(2532, 1170);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    final PosStore store = SqlitePosStore.inMemory();
+    addTearDown(store.close);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [kdsStoreProvider.overrideWithValue(store)],
+        child: const MaterialApp(
+          locale: Locale('fr'),
+          localizationsDelegates: <LocalizationsDelegate<Object>>[
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: KdsPairingScreen(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // Pick a kiosk, which is what reveals the code step.
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(KdsPairingScreen)),
+    );
+    container.read(kdsPairingProvider.notifier).select(
+      const HubAdvertisement(
+        endpoint: HubEndpoint(host: '192.168.1.245', port: 8801),
+        hubDeviceId: 'kiosk-door',
+        hubLabel: 'Borne (debug)',
+        branchId: '10000000-0000-4000-8000-000000000001',
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField).first, '182531');
+    await tester.pump();
+
+    final Finder join = find.widgetWithText(FilledButton, 'Apparier');
+    expect(join, findsOneWidget);
+
+    // On screen, not merely in the tree.
+    final Rect box = tester.getRect(join);
+    final Size screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(
+      box.bottom,
+      lessThanOrEqualTo(screen.height),
+      reason: 'the pairing action ran off the bottom of the board and the page '
+          'would not scroll to it — pairing was impossible from the product',
+    );
+    expect(tester.takeException(), isNull);
   });
 }

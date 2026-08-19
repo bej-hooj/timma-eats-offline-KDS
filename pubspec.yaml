@@ -2,7 +2,7 @@ name: timma_kds
 description: >-
   The TIMMA kitchen display. A tablet in the kitchen that keeps showing and advancing tickets with the WAN unplugged, driven by the kiosk hub over the restaurant LAN (ECOSYSTEM §23).
 publish_to: 'none'
-version: 0.5.0+9
+version: 0.5.1+10
 
 environment:
   sdk: ^3.12.2

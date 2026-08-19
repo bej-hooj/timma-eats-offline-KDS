@@ -67,12 +67,21 @@ class _KdsPairingScreenState extends ConsumerState<KdsPairingScreen> {
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: KdsScale.gap),
-                  Text(
-                    l10n.kdsPairSubtitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: KdsScale.bodySize),
-                  ),
+                  // ⚠ Only while it is still instructions. Once a kiosk has
+                  // been chosen this sentence describes a step already taken,
+                  // and its two lines are two lines the ACTION needs: at
+                  // 844 x 390 — the board in landscape — the whole code step
+                  // ran past the bottom of the screen and *Apparier* could not
+                  // be reached or scrolled to. Pairing was impossible from the
+                  // product on the one device shape it ships on.
+                  if (pairing.selected == null) ...<Widget>[
+                    const SizedBox(height: KdsScale.gap),
+                    Text(
+                      l10n.kdsPairSubtitle,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: KdsScale.bodySize),
+                    ),
+                  ],
                   const SizedBox(height: KdsScale.gapLg),
 
                   if (pairing.selected == null) ...<Widget>[
@@ -159,37 +168,53 @@ class _KdsPairingScreenState extends ConsumerState<KdsPairingScreen> {
                             Widget? _,
                           ) {
                             final bool complete = value.text.length == 6;
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                            // The field and the button side by side, not
+                            // stacked: a landscape board is wide and short, and
+                            // stacking them is what pushed the action off the
+                            // bottom.
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: <Widget>[
-                                TextField(
-                                  controller: _code,
-                                  autofocus: true,
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: <TextInputFormatter>[
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    LengthLimitingTextInputFormatter(6),
-                                  ],
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: KdsScale.totalSize,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 8,
+                                Expanded(
+                                  child: TextField(
+                                    controller: _code,
+                                    autofocus: true,
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: <TextInputFormatter>[
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(6),
+                                    ],
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: KdsScale.totalSize,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 8,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      counterText: '',
+                                    ),
+                                    // A six-digit code has one obvious end, and a
+                                    // cook holding a tablet should not have to
+                                    // find a button after typing it.
+                                    onSubmitted: (String code) {
+                                      if (code.length == 6) {
+                                        controller.join(code);
+                                      }
+                                    },
                                   ),
-                                  decoration: const InputDecoration(
-                                    counterText: '',
-                                  ),
-                                  // A six-digit code has one obvious end, and a
-                                  // cook holding a tablet should not have to
-                                  // find a button after typing it.
-                                  onSubmitted: (String code) {
-                                    if (code.length == 6) {
-                                      controller.join(code);
-                                    }
-                                  },
                                 ),
-                                const SizedBox(height: KdsScale.gapMd),
+                                const SizedBox(width: KdsScale.gapMd),
                                 FilledButton(
+                                  // Sized for a Row: the theme's button
+                                  // minimum is `Size.fromHeight`, which is an
+                                  // infinite width and an unbounded-width
+                                  // crash here.
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size(
+                                      0,
+                                      KdsScale.minTarget,
+                                    ),
+                                  ),
                                   onPressed: pairing.joining || !complete
                                       ? null
                                       : () => controller.join(value.text),
