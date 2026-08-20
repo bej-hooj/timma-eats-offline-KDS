@@ -236,6 +236,15 @@ class KdsPairingController extends Notifier<KdsPairingState> {
       // Only now does the rest of the app learn it has an identity, so a
       // half-finished pairing can never present itself as a working board.
       ref.read(kdsIdentityProvider.notifier).adopt();
+      // ⚠ **The old socket goes first.** `start()` is idempotent and returns
+      // early while a transport exists, so re-pairing on top of a live link
+      // left the board talking to the PREVIOUS kiosk: it paired perfectly,
+      // wrote the new address, showed no error, and went on receiving nothing.
+      // The board does not always get to notice the old kiosk has gone before a
+      // manager re-pairs — the refusal arrives on the link's own three-second
+      // pump, and somebody walking back from the borne with six digits is
+      // faster than that.
+      await ref.read(kdsLinkProvider.notifier).stop();
       // And the socket opens straight away: a manager who has just paired a
       // tablet expects the first order to land, not to have to restart it.
       unawaited(ref.read(kdsLinkProvider.notifier).start());
@@ -244,6 +253,11 @@ class KdsPairingController extends Notifier<KdsPairingState> {
     } on LinkProtocolException catch (error) {
       state = state.copyWith(
         joining: false,
+        // ⚠ A board that has been paired before keeps `paired` from that
+        // session unless this says otherwise, so a REFUSED pairing would
+        // report success. Nothing reads it today; the next thing that does
+        // would inherit the bug silently.
+        paired: false,
         // The hub distinguishes a *stale window* from *wrong digits*, and only
         // one of those is the manager's fault. Collapsing both into "code
         // refused" sent people back to re-read six digits they had typed
@@ -264,6 +278,7 @@ class KdsPairingController extends Notifier<KdsPairingState> {
     } on BranchCollectionSecretVaultException {
       state = state.copyWith(
         joining: false,
+        paired: false,
         error: KdsPairingError.storeFailed,
       );
     } on Object {
@@ -277,6 +292,7 @@ class KdsPairingController extends Notifier<KdsPairingState> {
       final bool reachable = await _reachable(hub.endpoint);
       state = state.copyWith(
         joining: false,
+        paired: false,
         error: reachable
             ? KdsPairingError.expired
             : KdsPairingError.unreachable,
