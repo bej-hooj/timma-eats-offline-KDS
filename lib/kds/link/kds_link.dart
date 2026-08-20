@@ -106,6 +106,10 @@ class KdsLinkController extends Notifier<KdsLinkState> {
   bool _disposed = false;
   bool _starting = false;
 
+  /// One reconnect attempt at a time. Without this the 3-second pump would pile
+  /// attempts on top of a socket that is already taking ten seconds to fail.
+  bool _reconnecting = false;
+
   /// The board pushes its own work up on this cadence. Fast, because it is a
   /// local socket on the same wifi and an unsent `ready` is a customer standing
   /// at a counter — and cheap, because an empty outbox is one indexed query.
@@ -276,6 +280,28 @@ class KdsLinkController extends Notifier<KdsLinkState> {
     final OutboxDrain? drain = _drain;
     if (drain == null) {
       return;
+    }
+
+    // ⚠ **A refusal has to be caught on every attempt, not just the first.**
+    // `connect()` was called once at start-up, so only that one attempt's error
+    // ever reached the handler that sends a refused board back to pairing.
+    // `LanSocketTransport` then reconnects on its own backoff for ever, and
+    // those attempts fail privately — which is exactly the field case: a board
+    // that was working, a kiosk that was reinstalled, and a tablet parked on
+    // *Hors ligne* with no way back. Reported from the device, twice.
+    //
+    // `connect()` returns the in-flight future when one exists, so this waits
+    // on the transport's own attempt rather than racing it.
+    // ⚠ **Not awaited.** `connect()` can sit for the full request timeout, and
+    // this method is also what a cook's tap calls to push a transition — so
+    // awaiting it here would stall *Prêt* behind a dead socket for ten seconds,
+    // and it hung the link tests outright. The reconnect runs alongside the
+    // drain; when it fails with a refusal, `_connect` unpairs the board from
+    // its own continuation.
+    final LanSocketTransport? transport = _transport;
+    if (transport != null && !state.connected && !_reconnecting) {
+      _reconnecting = true;
+      unawaited(_connect(transport).whenComplete(() => _reconnecting = false));
     }
     try {
       await drain.drainOnce();

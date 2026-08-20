@@ -232,3 +232,113 @@ honest options, to decide before coding:
 
 ⚠ Whichever is chosen, a kitchen tablet must never block a ticket on a network
 fetch: disk first, brand panel last, exactly as `KioskDishThumb` already does.
+
+## S9 — this pass (session 3): both devices, then the offline guide
+
+Owner, 2026-08-19: *"build the updates on bocav iphone and Samsung and lets
+test. For pairing… i will do that myself manually. After you test everything,
+you give me the guide step by step for offline test on wifi with no internet.
+Then you read everything about the whole ecosystem and tell me what should be
+done next."*
+
+### State at the top of S9
+
+- `kiosk_snapshot_categories_checksum_safe` (`20260819134257`) is **APPLIED**.
+  It is the reviewed migration minus one field: the original emitted
+  `photo_url` inside every category and hashed it into the checksum, while the
+  shipped Dart `SnapshotCategory` carries four fields and no `photo_url`. On any
+  branch **with** categories the two hashes disagree, `MenuSnapshot.validate()`
+  refuses the bundle, and a kiosk with no valid menu **cannot sell**. Production
+  has three active categories (Burgers 2, Plats 5, Boissons 2), every one with
+  an image, so it would have fired on the first fetch.
+- A kiosk device key exists for the Samsung and authenticates:
+  `rpc_menu_snapshot` returns the real menu. `[KioskCatalog] no device key` is
+  gone from the device log.
+- Live catalogue: 9 published products, `type` in `simple|composed|combo`
+  (the seed used `dish|drink`). **The kiosk never reads `type`**, so that is not
+  the parse failure. Product key sets and category key sets now match the Dart
+  models exactly, so the checksum is not the suspect either.
+- KDS has one uncommitted fix: the refusal-on-reconnect handler (below).
+
+### S9.1 — make the failure name itself (observability first)
+
+`[KioskCatalog] a sync tick failed` is unactionable, and the error is swallowed
+on purpose: *"a cloud error can carry a request URL, and a request URL can carry
+a device key"*. That reasoning is right and stays. But the **exception type**
+and, for a `PostgrestException`, its **`code`**, carry no URL and no key — and
+they are the difference between a diagnosis and a guess. Log those two, nothing
+else. Then rebuild and read the log rather than reasoning about which of the
+four RPCs a tick calls.
+
+### S9.2 — the refusal must be caught on EVERY reconnect
+
+Shipped uncommitted in `kds_link.dart`. `connect()` was called once at start-up,
+so only that attempt's error reached the handler that sends a refused board back
+to pairing. `LanSocketTransport` then reconnects on its own backoff for ever and
+those failures are private — which is the field case the owner hit **twice**: a
+board that worked, a kiosk that was reinstalled, and a tablet parked on *Hors
+ligne* with no route back. The pump now re-attempts while disconnected and reads
+the error.
+
+⚠ The integration test written for this timed out on loopback port reuse and was
+**removed rather than left flaky**. The controller-level gate is still covered by
+`kds_pairing_gate_test.dart`; the reconnect path is proven only by the device log
+line `[KdsLink] the kiosk refused this board — pairing again`. That is a known
+gap, recorded here rather than papered over.
+
+### S9.3 — build both devices, smoke, fix, repeat
+
+Samsung = borne (wireless adb, `192.168.1.245`). Bocav iPhone = cuisine,
+**release build only**, bump the build number every install. Owner does the
+pairing taps. Watch logcat for `FATAL EXCEPTION`, `E/flutter`, `OVERFLOW`.
+
+### S9.4 — the offline guide
+
+Written only after the online path is clean, so the guide describes something
+that has been seen working rather than something intended.
+
+### S9.1 result — two real bugs found, one blocker left, all measured
+
+Naming the error paid for itself immediately. `[KioskCatalog] a sync tick
+failed` became `PosError(snapshot_downgrade)` on the first run.
+
+**Bug 1 — the sample menu poisoned the store permanently.** The seed stamped
+itself `DateTime.now().millisecondsSinceEpoch ~/ 1000`, and the server's version
+is the epoch of the **last dashboard edit** — always in the past (it was
+2026-08-16 16:26). `activateSnapshot` refuses anything at or below the active
+version, so every real fetch came back `snapshot_downgrade`. **A tablet that had
+once run a seeded build could never accept the real menu again**, and the only
+symptom was the DEBUG ribbon staying up. Fixed: the seed is version `1`, the
+lowest a snapshot can carry. A fixture must never be able to beat real data.
+
+**Bug 2 — the swallowed error.** Kept swallowing the error itself (it can carry
+a request URL, and a URL can carry a device key) but the exception's *type*, a
+`PostgrestException`'s `code`, and a `PosError`'s `code` carry neither, and they
+are the difference between a diagnosis and a guess.
+
+**Blocker — `snapshot_checksum_mismatch`, and what is already ruled out.**
+After the downgrade cleared, the device now fails validation. Measured, not
+assumed:
+
+- The **server payload is correct**. Fetched live with a throwaway kiosk key and
+  run through the *pinned* `pos_core` (`tool/snapshot_checksum_probe.dart`):
+  9 products, 3 categories, v1787232333 — **checksums MATCH**, byte for byte.
+  So the applied migration and the Dart model agree, including the categories
+  branch the 2026-08-15 proof never covered.
+- **Not stale local state**: it still fails after an uninstall + clean install.
+- **Not two overloads**: `rpc_menu_snapshot(text,bigint)` is the only one, and
+  its body contains the categories block.
+- **Not `type`**: live values are `simple|composed|combo`; the kiosk never reads
+  `type` anywhere.
+- Product and category key sets match the Dart `toJson()` sets exactly.
+
+So the same bytes validate on the host and fail on the device. The next step is
+**not** more reasoning: wrap `SupabaseMenuSnapshotSource` in the app so that, on
+mismatch, it logs the canonical byte length and the first differing index —
+lengths and offsets, never content. One run then names the field.
+
+⚠ **The borne was left on the seeded menu deliberately.** With no seed and a
+failing fetch it has no menu at all and shows *Borne indisponible — Merci de
+commander directement à la caisse*, which is correct behaviour and an unusable
+kiosk. Seeded, it sells, and the red ribbon is the honest statement that the
+prices are samples.
