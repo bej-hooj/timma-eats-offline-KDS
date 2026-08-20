@@ -207,9 +207,22 @@ class KdsPairingController extends Notifier<KdsPairingState> {
       );
 
       await ref.read(kdsCredentialVaultProvider).write(result.credential);
+      // ⚠ **`adopt`, not `writeOnce` — and only here.** A kiosk that has been
+      // reinstalled mints a new branch secret, and `writeOnce` then refuses it
+      // as a conflict: the board reported *Impossible d'enregistrer la clé de
+      // sécurité sur cette tablette*, blaming its own keystore, and on iOS the
+      // keychain survives an app uninstall so reinstalling the board did not
+      // clear it either. Two devices, no way to make them work together from
+      // the devices. It stranded real hardware twice.
+      //
+      // The authority to replace it is what this very handshake just proved: a
+      // manager read six digits off the kiosk's screen and typed them here,
+      // inside the pairing window, with the code never crossing the wire
+      // (§23.9). That is the recovery ceremony the vault's doc has always
+      // required. Nothing else in either app may call `adopt`.
       await ref
           .read(kdsSecretVaultProvider)
-          .writeOnce(branchId: hub.branchId, secret: result.collectionSecret);
+          .adopt(branchId: hub.branchId, secret: result.collectionSecret);
       store.writeIdentity(identity);
       // ⚠ **And the address.** Everything above is what proves *who* this board
       // is; without this line it would come back from a restart perfectly
