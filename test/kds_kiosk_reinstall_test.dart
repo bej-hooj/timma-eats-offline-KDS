@@ -78,10 +78,7 @@ void main() {
 
     final PosEngine engine = PosEngine(store: store, identity: kioskIdentity);
     final PairingRegistry registry = PairingRegistry(collectionSecret: secret);
-    final LanHubServer server = LanHubServer(
-      engine: engine,
-      pairing: registry,
-    );
+    final LanHubServer server = LanHubServer(engine: engine, pairing: registry);
     final HubEndpoint endpoint = await server.start(
       address: InternetAddress.loopbackIPv4,
       port: 0,
@@ -111,7 +108,8 @@ void main() {
         ),
         kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
         kdsIntentPublisherProvider.overrideWith(
-          (Ref ref) => () => ref.read(kdsLinkProvider.notifier).pump(),
+          (Ref ref) =>
+              () => ref.read(kdsLinkProvider.notifier).pump(),
         ),
       ],
     );
@@ -198,7 +196,8 @@ void main() {
     expect(
       c.read(kdsPairingProvider).paired,
       isTrue,
-      reason: 'the first pairing must succeed, or nothing below is a test '
+      reason:
+          'the first pairing must succeed, or nothing below is a test '
           'of anything — error was ${c.read(kdsPairingProvider).error}',
     );
     expect(
@@ -227,7 +226,8 @@ void main() {
     expect(
       c.read(kdsPairingProvider).error,
       isNull,
-      reason: 'a supervised pairing is the ceremony that may rotate the '
+      reason:
+          'a supervised pairing is the ceremony that may rotate the '
           'secret; refusing it strands the kitchen for ever',
     );
     expect(c.read(kdsPairingProvider).paired, isTrue);
@@ -244,7 +244,8 @@ void main() {
     expect(
       held.matches(secretBefore),
       isFalse,
-      reason: 'the old secret is gone, not kept alongside — a board that '
+      reason:
+          'the old secret is gone, not kept alongside — a board that '
           'accepted both would verify slips from a kiosk that no longer exists',
     );
     expectOnlySocketNoise();
@@ -275,7 +276,8 @@ void main() {
     expect(
       printed.verifies(secret: onBoard, branchId: branchId),
       isTrue,
-      reason: 'a slip printed by the reinstalled borne must collect food at '
+      reason:
+          'a slip printed by the reinstalled borne must collect food at '
           'this kitchen — that is what the secret is for',
     );
     expect(
@@ -344,13 +346,16 @@ void main() {
 
     c.read(kdsBoardProvider);
     after.engine.placeKioskOrder(
-      lines: const <PosCartLine>[PosCartLine(productId: 'p-poulet', quantity: 1)],
+      lines: const <PosCartLine>[
+        PosCartLine(productId: 'p-poulet', quantity: 1),
+      ],
     );
     after.server.publishBoard();
 
     await until(
       () => c.read(kdsBoardProvider).lane(KdsLane.counter).isNotEmpty,
-      reason: 'an order rung on the reinstalled kiosk never reached the '
+      reason:
+          'an order rung on the reinstalled kiosk never reached the '
           'board — the socket was still pointed at the old one',
       // Shorter than the board's own 5-second refresh, so this cannot pass on
       // a timer having fired rather than on a snapshot having arrived.

@@ -165,4 +165,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kdsRepairConfirm => 'Pair again';
+
+  @override
+  String kdsWithout(String ingredient) {
+    return 'NO $ingredient';
+  }
 }

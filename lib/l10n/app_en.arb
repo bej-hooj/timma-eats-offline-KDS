@@ -67,5 +67,13 @@
   "kdsRepairTitle": "Pair with another kiosk",
   "kdsRepairBody": "This kitchen will stop receiving orders from the current kiosk. You will need to enter a new pairing code.",
   "kdsRepairCancel": "Cancel",
-  "kdsRepairConfirm": "Pair again"
+  "kdsRepairConfirm": "Pair again",
+  "kdsWithout": "NO {ingredient}",
+  "@kdsWithout": {
+    "placeholders": {
+      "ingredient": {
+        "type": "String"
+      }
+    }
+  }
 }

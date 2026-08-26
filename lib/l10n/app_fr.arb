@@ -67,5 +67,13 @@
   "kdsRepairTitle": "Apparier une autre borne",
   "kdsRepairBody": "Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez saisir un nouveau code d'appairage.",
   "kdsRepairCancel": "Annuler",
-  "kdsRepairConfirm": "Apparier à nouveau"
+  "kdsRepairConfirm": "Apparier à nouveau",
+  "kdsWithout": "SANS {ingredient}",
+  "@kdsWithout": {
+    "placeholders": {
+      "ingredient": {
+        "type": "String"
+      }
+    }
+  }
 }

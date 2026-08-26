@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
+import 'package:timma_kds/design/app_tokens.dart';
 import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/domain/kds_lanes.dart';
 import 'package:timma_kds/kds/kds_app.dart';
@@ -238,5 +239,126 @@ void main() {
       KdsLane.visible(lanes).length - 1,
       reason: 'left-to-right reading is a promise — lanes never swap places',
     );
+  });
+
+  testWidgets('a removal is its own line, in the error colour, in CAPITALS', (
+    tester,
+  ) async {
+    /*
+     * R2 / Stage 3d. The three assertions here are one rule: **a cook reads a
+     * modifier and a removal in opposite directions.** A modifier is something
+     * to add; a removal is something to withhold. Printed together, in the same
+     * weight, "sans oignon" reads as "add onion" — and this board is skimmed at
+     * arm's length by somebody already cooking.
+     */
+    tester.view.physicalSize = const Size(2532, 1170);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    // A CLOUD order, because the borne has no ingredient picker — a removal can
+    // only ever arrive from the app or the website.
+    engine.mergeRemoteOrder(
+      PosOrder(
+        clientId: 'c-remote-1',
+        branchId: 'branch-1',
+        origin: PosOrderOrigin.remote,
+        source: PosOrderSource.app,
+        mode: PosOrderMode.pickup,
+        status: PosOrderStatus.placed,
+        paymentStatus: PosPaymentStatus.paid,
+        paymentMethod: PosPaymentMethod.mobileMoney,
+        deviceSeq: 0,
+        subtotal: 4500,
+        discount: 0,
+        deliveryFee: 0,
+        total: 4500,
+        placedAtDevice: DateTime.utc(2026, 8, 26, 12),
+        statusChangedAt: DateTime.utc(2026, 8, 26, 12),
+        serverOrderId: 'srv-remote-1',
+        orderCode: 'TM-100300',
+        ticketNumber: 42,
+      ),
+      const <PosOrderLine>[
+        PosOrderLine(
+          lineNo: 0,
+          productId: 'p-poulet',
+          nameFr: 'Poulet DG',
+          nameEn: 'Chicken DG',
+          unitPrice: 4500,
+          quantity: 1,
+          lineTotal: 4500,
+          modifiers: <PosLineModifier>[
+            PosLineModifier(
+              optionId: 'o-plantain',
+              nameFr: 'Plantain',
+              nameEn: 'Plantain',
+              priceDelta: 500,
+              quantity: 1,
+            ),
+          ],
+          removedIngredients: <PosRemovedIngredient>[
+            PosRemovedIngredient(
+              id: 'ing-onion',
+              nameFr: 'Oignon',
+              nameEn: 'Onion',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kdsEngineProvider.overrideWithValue(engine),
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+        ],
+        child: const KdsApp(),
+      ),
+    );
+    await tester.pump();
+
+    // 1. It is said, in words a cook cannot read as an instruction to ADD.
+    expect(find.text('SANS OIGNON'), findsOneWidget);
+
+    // 2. It is NOT in the modifier line.
+    expect(find.text('Plantain'), findsOneWidget);
+    expect(find.text('Plantain · SANS OIGNON'), findsNothing);
+
+    // 3. It is drawn in the error colour and heavier than the options beside
+    //    it — the only thing on the card that changes what the cook must NOT
+    //    do.
+    final Text removed = tester.widget<Text>(
+      find.byKey(const Key('kds-line-removed')),
+    );
+    expect(removed.style?.color, AppColors.error);
+    expect(removed.style?.fontWeight, FontWeight.w800);
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a line with nothing removed draws no removal row at all', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(2532, 1170);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    engine.placeKioskOrder(
+      lines: const <PosCartLine>[PosCartLine(productId: 'p-jus', quantity: 1)],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kdsEngineProvider.overrideWithValue(engine),
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+        ],
+        child: const KdsApp(),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const Key('kds-line-removed')), findsNothing);
   });
 }

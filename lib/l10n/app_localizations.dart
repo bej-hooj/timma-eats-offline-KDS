@@ -385,6 +385,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Apparier à nouveau'**
   String get kdsRepairConfirm;
+
+  /// No description provided for @kdsWithout.
+  ///
+  /// In fr, this message translates to:
+  /// **'SANS {ingredient}'**
+  String kdsWithout(String ingredient);
 }
 
 class _AppLocalizationsDelegate

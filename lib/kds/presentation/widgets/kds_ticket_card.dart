@@ -108,7 +108,7 @@ class KdsTicketCard extends StatelessWidget {
             if (lines.isNotEmpty) ...<Widget>[
               const SizedBox(height: KdsScale.gapMd),
               for (final PosOrderLine line in lines)
-                _Line(line: line, french: french),
+                _Line(line: line, french: french, l10n: l10n),
             ],
             if (order.note != null &&
                 order.note!.trim().isNotEmpty) ...<Widget>[
@@ -229,11 +229,16 @@ class _Chip extends StatelessWidget {
 /// The variant and the chosen options sit under the name, indented and lighter:
 /// they qualify the dish rather than being separate work, and a cook scanning a
 /// rush reads the dish names down the card first.
+///
+/// ⚠ A REMOVAL is not one of those. It gets its own line, in the error colour
+/// and in capitals, because it is the one thing on the card that changes what
+/// the cook must NOT do.
 class _Line extends StatelessWidget {
-  const _Line({required this.line, required this.french});
+  const _Line({required this.line, required this.french, required this.l10n});
 
   final PosOrderLine line;
   final bool french;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -244,6 +249,20 @@ class _Line extends StatelessWidget {
         m.quantity > 1
             ? '${m.quantity} × ${french ? m.nameFr : m.nameEn}'
             : (french ? m.nameFr : m.nameEn),
+    ];
+    /*
+     * R2 (migrations 49 + 52) — what the customer asked to LEAVE OUT.
+     *
+     * ⚠ Its own line, in the ERROR colour, in CAPITALS, and never joined into
+     * `options` above. A cook reads the two in opposite directions: a modifier
+     * is something to add, a removal is something to withhold, and a removal
+     * printed among the extras reads as "add onion" — the exact opposite of
+     * what the customer asked for. This board is skimmed at arm's length while
+     * somebody is cooking; it has to be impossible to misread.
+     */
+    final List<String> removed = <String>[
+      for (final PosRemovedIngredient i in line.removedIngredients)
+        l10n.kdsWithout((french ? i.nameFr : i.nameEn).toUpperCase()),
     ];
 
     return Padding(
@@ -285,6 +304,15 @@ class _Line extends StatelessWidget {
                     options.join(' · '),
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: AppColors.textMuted,
+                    ),
+                  ),
+                if (removed.isNotEmpty)
+                  Text(
+                    removed.join(' · '),
+                    key: const Key('kds-line-removed'),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
               ],
