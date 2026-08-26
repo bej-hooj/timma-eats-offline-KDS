@@ -100,9 +100,20 @@ class KdsTicketCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: KdsScale.gapMd),
-            if (order.ticketNumber != null)
+            /*
+             * ⚠ The STATION, not just the number.
+             *
+             * `allocateTicketNumber` counts per till and restarts at 1 every
+             * Douala day, so a branch running two bornes prints two #1s — and
+             * this board is exactly where they meet. `ticketLabelOrNull`
+             * renders `B1-07`, and falls back to the bare number for a sale
+             * written before stations existed rather than inventing a letter:
+             * a wrong station sends a cook to the wrong customer, which is
+             * worse than no station at all.
+             */
+            if (order.ticketLabelOrNull != null)
               Text(
-                l10n.kdsTicket(order.ticketNumber!),
+                l10n.kdsTicket(order.ticketLabelOrNull!),
                 style: theme.textTheme.titleLarge,
               ),
             if (lines.isNotEmpty) ...<Widget>[

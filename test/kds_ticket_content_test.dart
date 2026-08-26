@@ -156,6 +156,91 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('the ticket says WHICH borne, not just a number', (tester) async {
+    /*
+     * ⚠ This board is exactly where two bornes meet.
+     *
+     * `allocateTicketNumber` counts per till and restarts at 1 at the Douala
+     * boundary, so a branch running two bornes sends two different #1s to one
+     * kitchen — and until migration 54 the number did not even reach a board
+     * fed by another borne, so the card omitted the line entirely and a cook
+     * had nothing to call out.
+     */
+    tester.view.physicalSize = const Size(2532, 1170);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    engine.placeKioskOrder(
+      lines: const <PosCartLine>[PosCartLine(productId: 'p-jus', quantity: 1)],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kdsEngineProvider.overrideWithValue(engine),
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+        ],
+        child: const KdsApp(),
+      ),
+    );
+    await tester.pump();
+
+    final String station = stationCodeFor(identity.deviceId);
+    expect(find.text('Ticket $station-01'), findsOneWidget);
+    expect(
+      find.text('Ticket 1'),
+      findsNothing,
+      reason: 'a bare number is ambiguous the moment there are two tills',
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an order from before stations shows its bare number', (
+    tester,
+  ) async {
+    // Never an invented station: sending a cook to the wrong borne's customer
+    // is worse than a number with no letter on it.
+    tester.view.physicalSize = const Size(2532, 1170);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    store.insertOrder(
+      PosOrder(
+        clientId: 'legacy-1',
+        branchId: 'branch-1',
+        origin: PosOrderOrigin.remote,
+        source: PosOrderSource.kiosk,
+        mode: PosOrderMode.pickup,
+        status: PosOrderStatus.placed,
+        paymentStatus: PosPaymentStatus.unpaid,
+        paymentMethod: PosPaymentMethod.payAtCounter,
+        deviceSeq: 0,
+        ticketNumber: 9,
+        subtotal: 1000,
+        discount: 0,
+        deliveryFee: 0,
+        total: 1000,
+        placedAtDevice: DateTime.utc(2026, 8, 19, 12),
+        statusChangedAt: DateTime.utc(2026, 8, 19, 12),
+      ),
+      const <PosOrderLine>[],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kdsEngineProvider.overrideWithValue(engine),
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+        ],
+        child: const KdsApp(),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Ticket 09'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the lanes are the take-away spine, not six fixed columns', (
     tester,
   ) async {

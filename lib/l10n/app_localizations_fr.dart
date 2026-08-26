@@ -74,8 +74,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String kdsTicket(int number) {
-    return 'Ticket $number';
+  String kdsTicket(String label) {
+    return 'Ticket $label';
   }
 
   @override

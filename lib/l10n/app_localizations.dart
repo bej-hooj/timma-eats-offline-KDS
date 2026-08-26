@@ -224,11 +224,11 @@ abstract class AppLocalizations {
   /// **'{minutes} min'**
   String kdsWaitingMinutes(int minutes);
 
-  /// No description provided for @kdsTicket.
+  /// The station-qualified ticket, e.g. B1-07. A String, not an int: two bornes both count from 1, so the number alone stopped identifying an order the moment a branch had a second till.
   ///
   /// In fr, this message translates to:
-  /// **'Ticket {number}'**
-  String kdsTicket(int number);
+  /// **'Ticket {label}'**
+  String kdsTicket(String label);
 
   /// No description provided for @kdsUnpairedTitle.
   ///

@@ -27,11 +27,12 @@
       }
     }
   },
-  "kdsTicket": "Ticket {number}",
+  "kdsTicket": "Ticket {label}",
   "@kdsTicket": {
+    "description": "The station-qualified ticket, e.g. B1-07. A String, not an int: two bornes both count from 1, so the number alone stopped identifying an order the moment a branch had a second till.",
     "placeholders": {
-      "number": {
-        "type": "int"
+      "label": {
+        "type": "String"
       }
     }
   },
