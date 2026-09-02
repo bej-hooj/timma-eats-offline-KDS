@@ -76,5 +76,21 @@
         "type": "String"
       }
     }
+  },
+  "kdsGroupLabel": "{group} : {answer}",
+  "@kdsGroupLabel": {
+    "description": "Q69 — une ligne de composition sur un ticket cuisine. Les deux-points prennent une espace avant en français, d'où le motif ici et pas dans le code.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
+  "kdsGroupNone": "AUCUN",
+  "@kdsGroupNone": {
+    "description": "Q69 — la réponse « rien choisi » pour un groupe QUI A ÉTÉ PROPOSÉ. En capitales comme SANS : c'est une instruction que le cuisinier doit lire de loin, et ne rien imprimer serait indiscernable d'un plat qui n'a jamais posé la question."
   }
 }

@@ -170,4 +170,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String kdsWithout(String ingredient) {
     return 'NO $ingredient';
   }
+
+  @override
+  String kdsGroupLabel(String group, String answer) {
+    return '$group: $answer';
+  }
+
+  @override
+  String get kdsGroupNone => 'NONE';
 }

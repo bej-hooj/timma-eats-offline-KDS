@@ -151,7 +151,18 @@ void main() {
 
     // The size, and both chosen options — the detail a cook needs to plate it.
     expect(find.text('Grand'), findsOneWidget);
-    expect(find.text('Plantain · Sauce piquante'), findsOneWidget);
+
+    /*
+     * ⚠ ONE LINE PER OPTION since Q69, not a middot-joined sentence. Three
+     * facts run together wrap across a card read at arm's length, and the
+     * answer a cook needs ends up on the second line of a grey run.
+     *
+     * This order was composed ON the borne, which has no modifier-group
+     * picker, so it takes the FALLBACK path: the flat list of what was chosen,
+     * which is the only thing such a row can honestly say.
+     */
+    expect(find.text('Plantain'), findsOneWidget);
+    expect(find.text('Sauce piquante'), findsOneWidget);
 
     expect(tester.takeException(), isNull);
   });
@@ -421,6 +432,122 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    '⚠⚠ Q69 — a group that was OFFERED and DECLINED is on the ticket',
+    (tester) async {
+      /*
+       * Owner, 2026-09-02, holding the ticket for TM-100136: *"ALl the
+       * accompagnement. pepper or not and every informations. Do the same on
+       * the Offline KDS"*.
+       *
+       * ⚠⚠ **This is the case the flat modifier list cannot express.** A dish
+       * that offered *Piment* and was given none produces exactly the same
+       * `modifiers` array as a dish that never had a Piment group — so a board
+       * printing only the chosen options is silent about both, and a cook
+       * cannot tell "they said no chilli" from "nobody asked". Migration 63
+       * carries the question as well as the answer; migration 64 carries it to
+       * this tablet.
+       *
+       * ⚠ A CLOUD order, because the borne has no group picker yet — the same
+       * reason the removal test above uses one.
+       */
+      tester.view.physicalSize = const Size(2532, 1170);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      engine.mergeRemoteOrder(
+        PosOrder(
+          clientId: 'c-remote-q69',
+          branchId: 'branch-1',
+          origin: PosOrderOrigin.remote,
+          source: PosOrderSource.app,
+          mode: PosOrderMode.pickup,
+          status: PosOrderStatus.placed,
+          paymentStatus: PosPaymentStatus.paid,
+          paymentMethod: PosPaymentMethod.mobileMoney,
+          deviceSeq: 0,
+          subtotal: 5100,
+          discount: 0,
+          deliveryFee: 0,
+          total: 5100,
+          placedAtDevice: DateTime.utc(2026, 9, 2, 12),
+          statusChangedAt: DateTime.utc(2026, 9, 2, 12),
+          serverOrderId: 'srv-remote-q69',
+          orderCode: 'TM-100400',
+          ticketNumber: 43,
+        ),
+        const <PosOrderLine>[
+          PosOrderLine(
+            lineNo: 0,
+            productId: 'p-poulet',
+            nameFr: 'Poulet DG',
+            nameEn: 'Chicken DG',
+            unitPrice: 5100,
+            quantity: 1,
+            lineTotal: 5100,
+            modifiers: <PosLineModifier>[
+              PosLineModifier(
+                optionId: 'o-plantain',
+                nameFr: 'Plantain mûr',
+                nameEn: 'Ripe plantain',
+                priceDelta: 100,
+                quantity: 2,
+              ),
+            ],
+            modifierGroups: <PosLineGroup>[
+              PosLineGroup(
+                groupId: 'g-side',
+                nameFr: 'Accompagnement',
+                nameEn: 'Side',
+                options: <PosLineModifier>[
+                  PosLineModifier(
+                    optionId: 'o-plantain',
+                    nameFr: 'Plantain mûr',
+                    nameEn: 'Ripe plantain',
+                    priceDelta: 100,
+                    quantity: 2,
+                  ),
+                ],
+              ),
+              // The whole point: asked, and answered "nothing".
+              PosLineGroup(
+                groupId: 'g-chili',
+                nameFr: 'Piment',
+                nameEn: 'Chili',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+          ],
+          child: const KdsApp(),
+        ),
+      );
+      await tester.pump();
+
+      // 1. The answered group, with the quantity — `max_qty` options are
+      //    priced per unit, so "×2" is the plate AND the bill.
+      expect(find.text('Accompagnement : 2 × Plantain mûr'), findsOneWidget);
+
+      // 2. ⚠⚠ The DECLINED group, said out loud.
+      expect(
+        find.text('Piment : AUCUN'),
+        findsOneWidget,
+        reason:
+            'printing nothing for Piment is indistinguishable from a dish '
+            'that never offered it',
+      );
+
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('a line with nothing removed draws no removal row at all', (
     tester,

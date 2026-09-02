@@ -76,5 +76,21 @@
         "type": "String"
       }
     }
+  },
+  "kdsGroupLabel": "{group}: {answer}",
+  "@kdsGroupLabel": {
+    "description": "Q69 — one composition line on a kitchen ticket. English colon spacing differs from French, which is why the pattern lives in the ARB.",
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "answer": {
+        "type": "String"
+      }
+    }
+  },
+  "kdsGroupNone": "NONE",
+  "@kdsGroupNone": {
+    "description": "Q69 — the answer 'nothing chosen' for a group that WAS OFFERED. Capitals like NO, because it is an instruction read at arm's length."
   }
 }

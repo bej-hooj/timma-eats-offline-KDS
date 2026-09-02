@@ -255,12 +255,38 @@ class _Line extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final String? variant = french ? line.variantNameFr : line.variantNameEn;
-    final List<String> options = <String>[
-      for (final PosLineModifier m in line.modifiers)
-        m.quantity > 1
-            ? '${m.quantity} × ${french ? m.nameFr : m.nameEn}'
-            : (french ? m.nameFr : m.nameEn),
-    ];
+    /*
+     * ⚠⚠ **Q69 — group by group, and the DECLINED groups are said out loud.**
+     *
+     * Owner, 2026-09-02: *"ALl the accompagnement. pepper or not and every
+     * informations. Do the same on the Offline KDS"*.
+     *
+     * `line.modifiers` is a flat list of what was CHOSEN and names no group, so
+     * a dish that offered *Piment* and was given none looked exactly like a
+     * dish that never offered it — and a cook cannot tell those apart on a
+     * board glanced at from two metres. `modifierGroups` (migration 63, carried
+     * to the tablet by migration 64) holds the question as well as the answer,
+     * so an empty option list prints as *"Piment : AUCUN"*.
+     *
+     * ⚠ The fallback is the only honest thing a pre-migration-63 row can say:
+     * those rows have no groups at all, so they print the flat list they always
+     * printed. It is not a second style, it is a different fact.
+     */
+    String option(PosLineModifier m) => m.quantity > 1
+        ? '${m.quantity} × ${french ? m.nameFr : m.nameEn}'
+        : (french ? m.nameFr : m.nameEn);
+
+    final List<String> options = line.modifierGroups.isNotEmpty
+        ? <String>[
+            for (final PosLineGroup g in line.modifierGroups)
+              l10n.kdsGroupLabel(
+                french ? g.nameFr : g.nameEn,
+                g.options.isEmpty
+                    ? l10n.kdsGroupNone
+                    : g.options.map(option).join(', '),
+              ),
+          ]
+        : <String>[for (final PosLineModifier m in line.modifiers) option(m)];
     /*
      * R2 (migrations 49 + 52) — what the customer asked to LEAVE OUT.
      *
@@ -310,9 +336,17 @@ class _Line extends StatelessWidget {
                       color: AppColors.textMuted,
                     ),
                   ),
-                if (options.isNotEmpty)
+                // ⚠ One line PER GROUP, not one joined sentence (Q69). Three
+                // groups run together with middots wrap across a card that is
+                // read at arm's length, and the answer a cook needs ends up on
+                // the second line of a grey run.
+                for (final String entry in options)
                   Text(
-                    options.join(' · '),
+                    entry,
+                    // ⚠ Keyed BY VALUE, not by a constant: two option rows in
+                    // one column with the same key is a duplicate-key assertion
+                    // that takes the whole board down, not a cosmetic warning.
+                    key: Key('kds-line-option-$entry'),
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: AppColors.textMuted,
                     ),

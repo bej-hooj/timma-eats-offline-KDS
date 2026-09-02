@@ -391,6 +391,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'SANS {ingredient}'**
   String kdsWithout(String ingredient);
+
+  /// Q69 — une ligne de composition sur un ticket cuisine. Les deux-points prennent une espace avant en français, d'où le motif ici et pas dans le code.
+  ///
+  /// In fr, this message translates to:
+  /// **'{group} : {answer}'**
+  String kdsGroupLabel(String group, String answer);
+
+  /// Q69 — la réponse « rien choisi » pour un groupe QUI A ÉTÉ PROPOSÉ. En capitales comme SANS : c'est une instruction que le cuisinier doit lire de loin, et ne rien imprimer serait indiscernable d'un plat qui n'a jamais posé la question.
+  ///
+  /// In fr, this message translates to:
+  /// **'AUCUN'**
+  String get kdsGroupNone;
 }
 
 class _AppLocalizationsDelegate
