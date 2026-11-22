@@ -6,6 +6,7 @@ import 'package:timma_kds/design/app_tokens.dart';
 import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/domain/kds_lanes.dart';
 import 'package:timma_kds/kds/kds_app.dart';
+import 'package:timma_kds/kds/presentation/widgets/kds_ticket_card.dart';
 import 'package:timma_kds/kds/state/kds_board.dart';
 import 'package:timma_kds/kds/theme/kds_scale.dart';
 
@@ -19,6 +20,7 @@ import 'package:timma_kds/kds/theme/kds_scale.dart';
 /// threw them away, so the kitchen read the board and then walked to the
 /// counter to ask what was in the order.
 void main() {
+  _theActionIsAlwaysOnScreen();
   late PosStore store;
   late PosEngine engine;
 
@@ -572,5 +574,107 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const Key('kds-line-removed')), findsNothing);
+  });
+}
+
+/// ⚠⚠ **A control a cook cannot reach is a control that does not exist.**
+///
+/// Seen on the real pair, 2026-11-22: *Ticket 01* arrived from the borne on
+/// the Samsung the kitchen runs on — **411 dp tall in landscape** — and the
+/// card's action button sat below the fold. The ticket could not be advanced
+/// at all. The card is one column of chips, ticket number, every line, the
+/// note and the total, with the button last, so a ticket with a few lines is
+/// simply taller than the lane.
+///
+/// This repo has paid for this exact lesson once already: the August pairing
+/// test asserted the button EXISTED and passed throughout, while it was off
+/// screen and pairing was impossible from the product. So this asserts the
+/// button's RECT is inside the viewport, not that a finder matched.
+void _theActionIsAlwaysOnScreen() {
+  testWidgets('the action button is reachable on a short kitchen screen', (
+    tester,
+  ) async {
+    final PosStore store = SqlitePosStore.inMemory();
+    addTearDown(store.close);
+    const PosDeviceIdentity identity = PosDeviceIdentity(
+      deviceId: 'kds-cuisine',
+      branchId: 'branch-1',
+      role: PosDeviceRole.kds,
+      label: 'Cuisine',
+    );
+    store.writeIdentity(identity);
+    final PosEngine engine = PosEngine(store: store, identity: identity);
+
+    const MenuSnapshot draft = MenuSnapshot(
+      version: 1,
+      branchId: 'branch-1',
+      declaredProductCount: 1,
+      checksum: '',
+      products: <SnapshotProduct>[
+        SnapshotProduct(
+          productId: 'p-long',
+          nameFr: 'Pepper soup de bœuf TIMMA',
+          nameEn: 'TIMMA beef pepper soup',
+          basePrice: 3500,
+          type: 'dish',
+          available: true,
+        ),
+      ],
+    );
+    final MenuSnapshot menu = MenuSnapshot(
+      version: draft.version,
+      branchId: draft.branchId,
+      declaredProductCount: draft.declaredProductCount,
+      products: draft.products,
+      checksum: draft.computeChecksum(),
+    );
+    store.stageSnapshot(menu, DateTime.utc(2026, 11, 22));
+    store.activateSnapshot(menu.version, DateTime.utc(2026, 11, 22));
+
+    // A ticket with enough on it to outgrow a short lane, and a note too.
+    engine.placeKioskOrder(
+      lines: const <PosCartLine>[
+        PosCartLine(productId: 'p-long', quantity: 2),
+        PosCartLine(productId: 'p-long', quantity: 1),
+        PosCartLine(productId: 'p-long', quantity: 3),
+      ],
+      note: 'Sans piment, bien chaud, à emporter tout de suite',
+    );
+
+    // The Samsung SM-G975F in landscape: 2280 x 1080 px at 420 dpi.
+    tester.view.physicalSize = const Size(2280, 1080);
+    tester.view.devicePixelRatio = 420 / 160;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kdsEngineProvider.overrideWithValue(engine),
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+        ],
+        child: const KdsApp(),
+      ),
+    );
+    await tester.pump();
+
+    // ⚠ Scoped to the CARD. A bare `find.byType(FilledButton)` matches the
+    // header's *Couper l'alarme* first, which is always on screen — so the
+    // assertion passed with the bug still in place. Caught by deleting the fix
+    // and watching the test stay green, which is the only way to know.
+    final Finder action = find.descendant(
+      of: find.byType(KdsTicketCard),
+      matching: find.byType(FilledButton),
+    );
+    expect(action, findsWidgets, reason: 'the ticket must offer an action');
+
+    final Size screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    final Rect rect = tester.getRect(action.first);
+    expect(
+      rect.bottom,
+      lessThanOrEqualTo(screen.height),
+      reason: 'the action ran ${rect.bottom - screen.height} dp past the '
+          'bottom of a ${screen.height} dp screen — a cook cannot press it',
+    );
+    expect(rect.top, greaterThanOrEqualTo(0));
   });
 }

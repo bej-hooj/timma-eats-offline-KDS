@@ -20,6 +20,7 @@ class KdsTicketCard extends StatelessWidget {
     required this.lines,
     required this.now,
     required this.onPrimaryAction,
+    this.maxHeight,
     super.key,
   });
 
@@ -38,6 +39,21 @@ class KdsTicketCard extends StatelessWidget {
   /// the ticket offers neither.
   final VoidCallback? onPrimaryAction;
 
+  /// The tallest this card may be — the lane's own height.
+  ///
+  /// ⚠⚠ **This is what keeps the action reachable.** The card is a single
+  /// column of chips, ticket number, every line, the note and the total, with
+  /// the button last. On the Samsung the kitchen runs on — **411 dp tall in
+  /// landscape** — a four-line ticket is taller than the lane, so the button
+  /// sat below the fold and a cook could not advance the ticket **at all**.
+  /// Seen on the device today: *Ticket 01* arrived, and there was no way to
+  /// touch it.
+  ///
+  /// The same mistake as the pairing screen in August, where the test asserted
+  /// the button EXISTED and passed while it was off screen. A control a cook
+  /// cannot reach is a control that does not exist.
+  final double? maxHeight;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
@@ -55,52 +71,62 @@ class KdsTicketCard extends StatelessWidget {
         // makes its own text harder to read exactly when it matters most.
         side: BorderSide(color: _urgencyColor(theme, urgency), width: 3),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(KdsScale.gapMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                // Wrapped, not a fixed Row: the French money-state label
-                // ("À encaisser") plus a source chip overflowed a 320-wide
-                // lane, and a card that clips its own money state is the one
-                // thing §1.6 says it must never do.
-                Expanded(
-                  child: Wrap(
-                    spacing: KdsScale.gap,
-                    runSpacing: 4,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight ?? double.infinity),
+        child: Padding(
+          padding: const EdgeInsets.all(KdsScale.gapMd),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              // Everything a cook READS scrolls; the thing a cook PRESSES does
+              // not. The button is a sibling of this box, never inside it.
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      _Chip(
-                        label: _sourceLabel(l10n, order.source),
-                        color: AppColors.primarySoft,
-                        textColor: AppColors.primary,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          // Wrapped, not a fixed Row: the French money-state label
+                          // ("À encaisser") plus a source chip overflowed a 320-wide
+                          // lane, and a card that clips its own money state is the one
+                          // thing §1.6 says it must never do.
+                          Expanded(
+                            child: Wrap(
+                              spacing: KdsScale.gap,
+                              runSpacing: 4,
+                              children: <Widget>[
+                                _Chip(
+                                  label: _sourceLabel(l10n, order.source),
+                                  color: AppColors.primarySoft,
+                                  textColor: AppColors.primary,
+                                ),
+                                _Chip(
+                                  label: paid ? l10n.kdsPaid : l10n.kdsUnpaid,
+                                  color: paid
+                                      ? AppColors.primary
+                                      : theme.colorScheme.error,
+                                  textColor: paid
+                                      ? AppColors.onPrimary
+                                      : theme.colorScheme.onError,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: KdsScale.gap),
+                          Text(
+                            l10n.kdsWaitingMinutes(waited),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: _urgencyColor(theme, urgency),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
-                      _Chip(
-                        label: paid ? l10n.kdsPaid : l10n.kdsUnpaid,
-                        color: paid
-                            ? AppColors.primary
-                            : theme.colorScheme.error,
-                        textColor: paid
-                            ? AppColors.onPrimary
-                            : theme.colorScheme.onError,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: KdsScale.gap),
-                Text(
-                  l10n.kdsWaitingMinutes(waited),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: _urgencyColor(theme, urgency),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: KdsScale.gapMd),
-            /*
+                      const SizedBox(height: KdsScale.gapMd),
+                      /*
              * ⚠ The STATION, not just the number.
              *
              * `allocateTicketNumber` counts per till and restarts at 1 every
@@ -111,59 +137,64 @@ class KdsTicketCard extends StatelessWidget {
              * a wrong station sends a cook to the wrong customer, which is
              * worse than no station at all.
              */
-            if (order.ticketLabelOrNull != null)
-              Text(
-                l10n.kdsTicket(order.ticketLabelOrNull!),
-                style: theme.textTheme.titleLarge,
-              ),
-            if (lines.isNotEmpty) ...<Widget>[
-              const SizedBox(height: KdsScale.gapMd),
-              for (final PosOrderLine line in lines)
-                _Line(line: line, french: french, l10n: l10n),
-            ],
-            if (order.note != null &&
-                order.note!.trim().isNotEmpty) ...<Widget>[
-              const SizedBox(height: KdsScale.gap),
-              // A note is an instruction from a person, not decoration: it is
-              // given its own emphasis so it cannot be skimmed past.
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(KdsScale.gap),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(KdsScale.gap),
-                ),
-                child: Text(
-                  order.note!.trim(),
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontSize: KdsScale.labelSize,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                      if (order.ticketLabelOrNull != null)
+                        Text(
+                          l10n.kdsTicket(order.ticketLabelOrNull!),
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      if (lines.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: KdsScale.gapMd),
+                        for (final PosOrderLine line in lines)
+                          _Line(line: line, french: french, l10n: l10n),
+                      ],
+                      if (order.note != null &&
+                          order.note!.trim().isNotEmpty) ...<Widget>[
+                        const SizedBox(height: KdsScale.gap),
+                        // A note is an instruction from a person, not decoration: it is
+                        // given its own emphasis so it cannot be skimmed past.
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(KdsScale.gap),
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySoft,
+                            borderRadius: BorderRadius.circular(KdsScale.gap),
+                          ),
+                          child: Text(
+                            order.note!.trim(),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontSize: KdsScale.labelSize,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: KdsScale.gap),
+                      Text(
+                        MoneyFormatter.formatXaf(order.total),
+                        style: const TextStyle(
+                          fontSize: KdsScale.totalSize,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.onSurface,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-            const SizedBox(height: KdsScale.gap),
-            Text(
-              MoneyFormatter.formatXaf(order.total),
-              style: const TextStyle(
-                fontSize: KdsScale.totalSize,
-                fontWeight: FontWeight.w800,
-                color: AppColors.onSurface,
-              ),
-            ),
-            if (onPrimaryAction != null) ...<Widget>[
-              const SizedBox(height: KdsScale.gapMd),
-              SizedBox(
-                width: double.infinity,
-                height: KdsScale.minTarget,
-                child: FilledButton(
-                  onPressed: onPrimaryAction,
-                  child: Text(_actionLabel(l10n, order)),
+              if (onPrimaryAction != null) ...<Widget>[
+                const SizedBox(height: KdsScale.gapMd),
+                SizedBox(
+                  width: double.infinity,
+                  height: KdsScale.minTarget,
+                  child: FilledButton(
+                    onPressed: onPrimaryAction,
+                    child: Text(_actionLabel(l10n, order)),
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

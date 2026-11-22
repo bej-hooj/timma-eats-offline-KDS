@@ -331,22 +331,33 @@ class _Lane extends StatelessWidget {
           Expanded(
             child: orders.isEmpty
                 ? Text(emptyLabel, style: theme.textTheme.labelLarge)
-                : ListView.builder(
-                    itemCount: orders.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      final PosOrder order = orders[index];
-                      final bool actionable =
-                          order.status == PosOrderStatus.pendingPayment ||
-                          KdsLane.advanceFor(order.status, order.mode) != null;
-                      return KdsTicketCard(
-                        order: order,
-                        lines: linesOf(order.clientId),
-                        now: now,
-                        onPrimaryAction: actionable
-                            ? () => onAction(order)
-                            : null,
-                      );
-                    },
+                // The lane's own height is passed down so no card can grow
+                // taller than the space a cook can see — see
+                // `KdsTicketCard.maxHeight`.
+                : LayoutBuilder(
+                    builder:
+                        (
+                          BuildContext context,
+                          BoxConstraints constraints,
+                        ) => ListView.builder(
+                          itemCount: orders.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final PosOrder order = orders[index];
+                            final bool actionable =
+                                order.status == PosOrderStatus.pendingPayment ||
+                                KdsLane.advanceFor(order.status, order.mode) !=
+                                    null;
+                            return KdsTicketCard(
+                              order: order,
+                              lines: linesOf(order.clientId),
+                              now: now,
+                              maxHeight: constraints.maxHeight,
+                              onPrimaryAction: actionable
+                                  ? () => onAction(order)
+                                  : null,
+                            );
+                          },
+                        ),
                   ),
           ),
         ],
