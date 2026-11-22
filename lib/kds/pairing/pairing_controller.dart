@@ -29,6 +29,7 @@ class KdsPairingState {
     this.selected,
     this.joining = false,
     this.paired = false,
+    this.awaitingApproval,
     this.error,
   });
 
@@ -37,6 +38,15 @@ class KdsPairingState {
   final HubAdvertisement? selected;
   final bool joining;
   final bool paired;
+
+  /// The six digits to show the cook while the borne decides, or null when
+  /// this pairing is not waiting on a human.
+  ///
+  /// ⚠ They are not a code to type. They are there to be **compared** with the
+  /// number on the borne: that comparison is what stops a man in the middle on
+  /// the restaurant wifi pairing as this board.
+  final String? awaitingApproval;
+
   final String? error;
 
   KdsPairingState copyWith({
@@ -45,15 +55,20 @@ class KdsPairingState {
     HubAdvertisement? selected,
     bool? joining,
     bool? paired,
+    String? awaitingApproval,
     String? error,
     bool clearError = false,
     bool clearSelected = false,
+    bool clearAwaiting = false,
   }) => KdsPairingState(
     searching: searching ?? this.searching,
     hubs: hubs ?? this.hubs,
     selected: clearSelected ? null : (selected ?? this.selected),
     joining: joining ?? this.joining,
     paired: paired ?? this.paired,
+    awaitingApproval: clearAwaiting
+        ? null
+        : (awaitingApproval ?? this.awaitingApproval),
     error: clearError ? null : (error ?? this.error),
   );
 }
@@ -182,12 +197,19 @@ class KdsPairingController extends Notifier<KdsPairingState> {
   /// board — an identity with no credential, or a credential with no secret —
   /// would come back after a restart looking paired and be unable to verify a
   /// single slip.
-  Future<void> join(String code) async {
+  /// Pairs with the selected borne.
+  ///
+  /// [code] null is the **one-tap** path the owner asked for: nothing is typed,
+  /// the borne shows six digits beside *Accepter*, this screen shows the same
+  /// six, and a human compares them and taps once. A code is the original
+  /// path, kept because mDNS is blocked on plenty of routers and because a
+  /// manager who cannot find the request on the borne needs a way through.
+  Future<void> join([String? code]) async {
     final HubAdvertisement? hub = state.selected;
     if (hub == null || state.joining) {
       return;
     }
-    state = state.copyWith(joining: true, clearError: true);
+    state = state.copyWith(joining: true, clearError: true, clearAwaiting: true);
 
     final PosStore store = ref.read(kdsStoreProvider);
     final PosDeviceIdentity identity = PosDeviceIdentity(
@@ -204,6 +226,11 @@ class KdsPairingController extends Notifier<KdsPairingState> {
         endpoint: hub.endpoint,
         identity: identity,
         code: code,
+        onAwaitingApproval: (String digits) {
+          if (ref.mounted) {
+            state = state.copyWith(awaitingApproval: digits);
+          }
+        },
       );
 
       await ref.read(kdsCredentialVaultProvider).write(result.credential);

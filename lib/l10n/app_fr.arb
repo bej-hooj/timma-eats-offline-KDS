@@ -50,7 +50,7 @@
     }
   },
   "kdsPairTitle": "Apparier cette cuisine",
-  "kdsPairSubtitle": "Trouvez la borne sur le wifi du restaurant, puis saisissez le code affiché sur son écran.",
+  "kdsPairSubtitle": "Choisissez la borne sur le wifi du restaurant, puis validez sur son écran.",
   "kdsPairSearch": "Chercher la borne",
   "kdsPairSearching": "Recherche en cours…",
   "kdsPairManual": "Saisir l'adresse à la main",
@@ -66,7 +66,7 @@
   "kdsPairErrorUnreachable": "Borne injoignable. Vérifiez le wifi et l'adresse.",
   "kdsPairErrorStore": "Impossible d'enregistrer la clé de sécurité sur cette tablette.",
   "kdsRepairTitle": "Apparier une autre borne",
-  "kdsRepairBody": "Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez saisir un nouveau code d'appairage.",
+  "kdsRepairBody": "Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez l'apparier à nouveau.",
   "kdsRepairCancel": "Annuler",
   "kdsRepairConfirm": "Apparier à nouveau",
   "kdsWithout": "SANS {ingredient}",
@@ -92,5 +92,10 @@
   "kdsGroupNone": "AUCUN",
   "@kdsGroupNone": {
     "description": "Q69 — la réponse « rien choisi » pour un groupe QUI A ÉTÉ PROPOSÉ. En capitales comme SANS : c'est une instruction que le cuisinier doit lire de loin, et ne rien imprimer serait indiscernable d'un plat qui n'a jamais posé la question."
-  }
+  },
+  "kdsPairTap": "Apparier en un geste",
+  "kdsPairWaiting": "Validez sur la borne",
+  "kdsPairCompare": "Ce nombre doit être le même sur l'écran de la borne.",
+  "kdsPairOrCode": "Ou saisissez le code affiché sur la borne",
+  "kdsPairErrorRefused": "La borne a refusé cette cuisine."
 }

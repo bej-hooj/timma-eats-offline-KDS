@@ -122,6 +122,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // ⚠ The code is the SECOND procedure since 2026-11-22 and is revealed, not
+    // shown: one tap is the first. Both paths on screen at once ran the button
+    // 53 px off a 390 dp board, which is what the landscape test below guards.
+    await tester.tap(find.text('Ou saisissez le code affiché sur la borne'));
+    await tester.pumpAndSettle();
+
     Finder joinButton() => find.widgetWithText(FilledButton, 'Apparier');
     expect(
       tester.widget<FilledButton>(joinButton()).onPressed,
@@ -216,6 +222,21 @@ void _codeStepFitsTests() {
         );
     await tester.pump();
 
+    // ⚠ The ONE-TAP action is what a cook meets first now, so it is what must
+    // be on screen first. Asserted before the code path is even revealed.
+    final Finder tap = find.widgetWithText(FilledButton, 'Apparier en un geste');
+    expect(tap, findsOneWidget);
+    final Size screenSize =
+        tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(
+      tester.getRect(tap).bottom,
+      lessThanOrEqualTo(screenSize.height),
+      reason: 'the one-tap action must be on screen without scrolling',
+    );
+
+    // Then the fallback, revealed.
+    await tester.tap(find.text('Ou saisissez le code affiché sur la borne'));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '182531');
     await tester.pump();
 

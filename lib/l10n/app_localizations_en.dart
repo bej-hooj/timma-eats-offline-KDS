@@ -104,7 +104,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kdsPairSubtitle =>
-      'Find the kiosk on the restaurant wifi, then type the code shown on its screen.';
+      'Pick the kiosk on the restaurant wifi, then approve on its screen.';
 
   @override
   String get kdsPairSearch => 'Find the kiosk';
@@ -158,7 +158,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kdsRepairBody =>
-      'This kitchen will stop receiving orders from the current kiosk. You will need to enter a new pairing code.';
+      'This kitchen will stop receiving orders from the current kiosk. You will have to pair it again.';
 
   @override
   String get kdsRepairCancel => 'Cancel';
@@ -178,4 +178,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kdsGroupNone => 'NONE';
+
+  @override
+  String get kdsPairTap => 'Pair with one tap';
+
+  @override
+  String get kdsPairWaiting => 'Approve on the kiosk';
+
+  @override
+  String get kdsPairCompare =>
+      'This number must match the one on the kiosk screen.';
+
+  @override
+  String get kdsPairOrCode => 'Or type the code shown on the kiosk';
+
+  @override
+  String get kdsPairErrorRefused => 'The kiosk refused this kitchen.';
 }

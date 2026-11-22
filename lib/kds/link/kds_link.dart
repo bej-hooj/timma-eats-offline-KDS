@@ -212,6 +212,47 @@ class KdsLinkController extends Notifier<KdsLinkState> {
   /// mDNS, for the board that has never been told an address or whose kiosk
   /// moved. Bounded: a browse that runs for ever on a router with multicast off
   /// is a background radio nobody asked for.
+  /// How long the link may fail before the stored address is doubted.
+  ///
+  /// ⚠ Measured in TIME, not pump ticks. A connect attempt holds
+  /// `_reconnecting` for its whole request timeout, so most ticks are skipped
+  /// while one is in flight — counting ticks made this take minutes instead of
+  /// the minute it reads as.
+  static const Duration _offlineBeforeRediscovery = Duration(seconds: 45);
+
+  DateTime? _offlineSince;
+
+  /// Looks for this branch's borne at a new address and moves the link there.
+  ///
+  /// Does nothing unless discovery actually finds a DIFFERENT endpoint: a
+  /// kitchen whose kiosk is merely switched off must keep waiting for it, not
+  /// tear its own link down every minute.
+  Future<void> _relocate() async {
+    final PosDeviceIdentity? identity = ref.read(kdsIdentityProvider);
+    final LanSocketTransport? current = _transport;
+    if (identity == null || current == null || _disposed) {
+      return;
+    }
+    final HubEndpoint? found = await _rediscover(identity.branchId);
+    if (found == null || _disposed) {
+      return;
+    }
+    if (found.host == current.endpoint.host &&
+        found.port == current.endpoint.port) {
+      return;
+    }
+    debugPrint('[KdsLink] the borne moved — following it to a new address');
+    final PosStore store = ref.read(kdsStoreProvider);
+    KdsHubAddress.remember(
+      store,
+      endpoint: found,
+      // The borne's name has not changed, only where it lives.
+      label: KdsHubAddress.label(store) ?? 'Borne',
+    );
+    await stop();
+    await start();
+  }
+
   Future<HubEndpoint?> _rediscover(String branchId) async {
     state = state.copyWith(searching: true);
     final Completer<HubEndpoint?> found = Completer<HubEndpoint?>();
@@ -301,7 +342,27 @@ class KdsLinkController extends Notifier<KdsLinkState> {
     final LanSocketTransport? transport = _transport;
     if (transport != null && !state.connected && !_reconnecting) {
       _reconnecting = true;
+      _offlineSince ??= DateTime.now();
       unawaited(_connect(transport).whenComplete(() => _reconnecting = false));
+      // ⚠⚠ **The stored address can simply be wrong, and for ever.**
+      //
+      // `start()` uses `KdsHubAddress` and only falls back to discovery when
+      // there is none. Move the two tablets to another wifi — which the owner
+      // did today — and the borne gets a new lease, so the board dials a dead
+      // address until somebody re-pairs it, with nothing on screen to say
+      // why. Same on any router reboot that reshuffles DHCP.
+      //
+      // After a minute of failure the address is treated as suspect and mDNS
+      // is asked again. The credential is untouched: this looks for the SAME
+      // branch's hub at a new address, and finding one is not pairing.
+      final DateTime? since = _offlineSince;
+      if (since != null &&
+          DateTime.now().difference(since) >= _offlineBeforeRediscovery) {
+        _offlineSince = null;
+        unawaited(_relocate());
+      }
+    } else if (state.connected) {
+      _offlineSince = null;
     }
     try {
       await drain.drainOnce();

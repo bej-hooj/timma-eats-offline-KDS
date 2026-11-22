@@ -104,7 +104,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get kdsPairSubtitle =>
-      'Trouvez la borne sur le wifi du restaurant, puis saisissez le code affiché sur son écran.';
+      'Choisissez la borne sur le wifi du restaurant, puis validez sur son écran.';
 
   @override
   String get kdsPairSearch => 'Chercher la borne';
@@ -159,7 +159,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get kdsRepairBody =>
-      'Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez saisir un nouveau code d\'appairage.';
+      'Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez l\'apparier à nouveau.';
 
   @override
   String get kdsRepairCancel => 'Annuler';
@@ -179,4 +179,20 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get kdsGroupNone => 'AUCUN';
+
+  @override
+  String get kdsPairTap => 'Apparier en un geste';
+
+  @override
+  String get kdsPairWaiting => 'Validez sur la borne';
+
+  @override
+  String get kdsPairCompare =>
+      'Ce nombre doit être le même sur l\'écran de la borne.';
+
+  @override
+  String get kdsPairOrCode => 'Ou saisissez le code affiché sur la borne';
+
+  @override
+  String get kdsPairErrorRefused => 'La borne a refusé cette cuisine.';
 }

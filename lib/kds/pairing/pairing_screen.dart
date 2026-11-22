@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:timma_kds/design/app_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_link/pos_link.dart';
@@ -21,6 +23,10 @@ class KdsPairingScreen extends ConsumerStatefulWidget {
 
 class _KdsPairingScreenState extends ConsumerState<KdsPairingScreen> {
   final TextEditingController _code = TextEditingController();
+
+  /// Whether the six-digit fallback is on screen. Off by default: tapping is
+  /// the first procedure now, the code is the second.
+  bool _showCode = false;
   final TextEditingController _host = TextEditingController();
 
   @override
@@ -144,12 +150,48 @@ class _KdsPairingScreenState extends ConsumerState<KdsPairingScreen> {
                       ),
                     ),
                     const SizedBox(height: KdsScale.gapMd),
-                    Text(
-                      l10n.kdsPairCodePrompt,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: KdsScale.bodySize),
-                    ),
-                    const SizedBox(height: KdsScale.gap),
+                    // ⚠⚠ The one-tap path comes FIRST and the code second.
+                    // Owner, 2026-11-22: *"the code is always bothering"*. A
+                    // cook who sees a keypad reaches for it.
+                    if (pairing.awaitingApproval != null)
+                      _WaitingForApproval(digits: pairing.awaitingApproval!)
+                    else
+                      SizedBox(
+                        height: KdsScale.minTarget,
+                        child: FilledButton.icon(
+                          onPressed: pairing.joining
+                              ? null
+                              : () => controller.join(),
+                          icon: const Icon(Icons.touch_app_outlined),
+                          label: Text(
+                            pairing.joining
+                                ? l10n.kdsPairJoining
+                                : l10n.kdsPairTap,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: KdsScale.gapMd),
+                    // ⚠ The code path is REVEALED, not shown. A landscape
+                    // board is 390 dp tall and the two paths together ran the
+                    // *Apparier* button 53 px off the bottom — caught by the
+                    // test that has guarded this screen since August. Hiding
+                    // it is also the honest hierarchy: the owner asked for the
+                    // code to stop being the first thing a cook sees.
+                    if (!_showCode)
+                      TextButton(
+                        onPressed: () => setState(() => _showCode = true),
+                        child: Text(l10n.kdsPairOrCode),
+                      ),
+                    if (_showCode) ...<Widget>[
+                      Text(
+                        l10n.kdsPairCodePrompt,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: KdsScale.labelSize,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: KdsScale.gap),
                     // ⚠ `ValueListenableBuilder`, not a bare read of
                     // `_code.text`.
                     //
@@ -228,6 +270,7 @@ class _KdsPairingScreenState extends ConsumerState<KdsPairingScreen> {
                             );
                           },
                     ),
+                    ],
                   ],
 
                   if (pairing.error != null) ...<Widget>[
@@ -335,5 +378,65 @@ class _ManualColumn extends StatelessWidget {
         OutlinedButton(onPressed: onConnect, child: Text(l10n.kdsPairConnect)),
       ],
     );
+  }
+}
+
+
+/// What the cook looks at while someone walks to the borne.
+///
+/// ⚠ The number is **to compare, never to type**. It is the out-of-band
+/// channel that authenticates a key agreement carrying no code: a man in the
+/// middle would have to run two of them, and the two screens would differ.
+class _WaitingForApproval extends StatelessWidget {
+  const _WaitingForApproval({required this.digits});
+
+  final String digits;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    return Column(
+      children: <Widget>[
+        Text(
+          l10n.kdsPairWaiting,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: KdsScale.bodySize,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: KdsScale.gap),
+        Text(
+          _spaced(digits),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: KdsScale.totalSize,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 6,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: KdsScale.gap),
+        Text(
+          l10n.kdsPairCompare,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: KdsScale.labelSize,
+            color: AppColors.textMuted,
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _spaced(String digits) {
+    final StringBuffer out = StringBuffer();
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && i % 2 == 0) {
+        out.write('\u2009');
+      }
+      out.write(digits[i]);
+    }
+    return out.toString();
   }
 }

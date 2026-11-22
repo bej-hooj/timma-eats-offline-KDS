@@ -275,7 +275,7 @@ abstract class AppLocalizations {
   /// No description provided for @kdsPairSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Trouvez la borne sur le wifi du restaurant, puis saisissez le code affiché sur son écran.'**
+  /// **'Choisissez la borne sur le wifi du restaurant, puis validez sur son écran.'**
   String get kdsPairSubtitle;
 
   /// No description provided for @kdsPairSearch.
@@ -371,7 +371,7 @@ abstract class AppLocalizations {
   /// No description provided for @kdsRepairBody.
   ///
   /// In fr, this message translates to:
-  /// **'Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez saisir un nouveau code d\'appairage.'**
+  /// **'Cette cuisine ne recevra plus les commandes de la borne actuelle. Vous devrez l\'apparier à nouveau.'**
   String get kdsRepairBody;
 
   /// No description provided for @kdsRepairCancel.
@@ -403,6 +403,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'AUCUN'**
   String get kdsGroupNone;
+
+  /// No description provided for @kdsPairTap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Apparier en un geste'**
+  String get kdsPairTap;
+
+  /// No description provided for @kdsPairWaiting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validez sur la borne'**
+  String get kdsPairWaiting;
+
+  /// No description provided for @kdsPairCompare.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce nombre doit être le même sur l\'écran de la borne.'**
+  String get kdsPairCompare;
+
+  /// No description provided for @kdsPairOrCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ou saisissez le code affiché sur la borne'**
+  String get kdsPairOrCode;
+
+  /// No description provided for @kdsPairErrorRefused.
+  ///
+  /// In fr, this message translates to:
+  /// **'La borne a refusé cette cuisine.'**
+  String get kdsPairErrorRefused;
 }
 
 class _AppLocalizationsDelegate
