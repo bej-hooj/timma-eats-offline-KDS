@@ -371,6 +371,56 @@ void main() {
     });
   });
 
+  /// Owner, 2026-11-23: *"kitchen and born should fit any size cause it could
+  /// be displayed on tv. so RESPONSIVENESS"*.
+  ///
+  /// A television reports its pixels at a ratio of 1, so the board is handed a
+  /// logical width four times anything a tablet gives it — and at the other
+  /// end a 640 dp board has to carry the same four lanes. The text scale is in
+  /// here because ignoring it is exactly what kept *En préparation* truncated
+  /// through three attempts: the kitchen Samsung is set to 1.1.
+  for (final (String name, Size size, double ratio, double scale)
+      in <(String, Size, double, double)>[
+        ('television 1080p', Size(1920, 1080), 1.0, 1.0),
+        ('television 4K', Size(3840, 2160), 1.0, 1.0),
+        ('Samsung landscape', Size(2280, 1080), 2.625, 1.1),
+        ('Samsung at 1.3', Size(2280, 1080), 2.625, 1.3),
+        ('budget 7-inch', Size(1280, 800), 2.0, 1.0),
+        ('portrait, mid-rotation', Size(1080, 2280), 2.625, 1.0),
+      ]) {
+    testWidgets('the board holds together — $name', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      engine.placeKioskOrder(
+        lines: const <PosCartLine>[
+          PosCartLine(productId: 'p-jus', quantity: 2),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+          child: ProviderScope(
+            overrides: [
+              kdsEngineProvider.overrideWithValue(engine),
+              kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+            ],
+            child: const KdsApp(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // An overflow throws here, which is the whole point: the board is the
+      // screen nobody is watching when it breaks.
+      expect(tester.takeException(), isNull, reason: 'overflow at $name');
+      // And it is still a board: the ticket is on it.
+      expect(find.byType(KdsTicketCard), findsWidgets, reason: name);
+    });
+  }
+
   testWidgets('the lanes are the take-away spine, not six fixed columns', (
     tester,
   ) async {

@@ -124,22 +124,29 @@ class KdsTicketCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: KdsScale.gap),
-                          Text(
-                            // ⚠ **Hours past three of them, never minutes.**
-                            // Seen on the real board 2026-11-23: a ticket
-                            // synced down from the cloud read **142411 min**,
-                            // which is three months expressed in a unit for
-                            // tens. It is not a wrong number — it is a number
-                            // in a unit nobody can read, on the mark a cook is
-                            // meant to glance at. A board whose urgency mark
-                            // is noise is a board that trains people to ignore
-                            // the mark.
-                            waiting < const Duration(hours: 3)
-                                ? l10n.kdsWaitingMinutes(waited)
-                                : l10n.kdsWaitingLong(waiting.inHours),
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: _urgencyColor(theme, urgency),
-                              fontWeight: FontWeight.w700,
+                          // ⚠ Flexible: on a narrow lane the chips beside it
+                          // take what they need and this ran 8.5 px over.
+                          // The age gives way before the money state does.
+                          Flexible(
+                            child: Text(
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              // ⚠ **Hours past three of them, never minutes.**
+                              // Seen on the real board 2026-11-23: a ticket
+                              // synced down from the cloud read **142411 min**,
+                              // which is three months expressed in a unit for
+                              // tens. It is not a wrong number — it is a number
+                              // in a unit nobody can read, on the mark a cook is
+                              // meant to glance at. A board whose urgency mark
+                              // is noise is a board that trains people to ignore
+                              // the mark.
+                              waiting < const Duration(hours: 3)
+                                  ? l10n.kdsWaitingMinutes(waited)
+                                  : l10n.kdsWaitingLong(waiting.inHours),
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: _urgencyColor(theme, urgency),
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ],
@@ -378,74 +385,99 @@ class _Line extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: KdsScale.gap),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          // ⚠ **Picture, then quantity, then the dish.** The photograph is
-          // the fastest thing to recognise from two metres and the quantity is
-          // the thing that must not be got wrong, so they are adjacent and in
-          // that order. The picture never takes the quantity's weight: the
-          // number stays the loudest mark on the line.
-          KdsDishPhoto(productId: line.productId, side: KdsScale.thumbSide),
-          const SizedBox(width: KdsScale.gap),
-          SizedBox(
-            width: 44,
-            child: Text(
-              '${line.quantity} ×',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: KdsScale.bodySize,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  french ? line.nameFr : line.nameEn,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints box) {
+          // ⚠ **The picture is the first thing to go, and it goes quietly.**
+          // Measured at 640x400 dp: four lanes leave a ticket line about
+          // 96 dp, and a 52 dp thumbnail beside the quantity ran 10 px over —
+          // an overflow stripe across a kitchen ticket. The dish NAME is what
+          // a cook cooks from; the photograph is a recognition aid, so it
+          // shrinks to what is left and disappears rather than push the words
+          // off their own line.
+          final double slack =
+              box.maxWidth - _quantityColumn - KdsScale.gap - _nameFloor;
+          final double thumb = slack.clamp(0, KdsScale.thumbSide);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              // Picture, then quantity, then the dish. The photograph is the
+              // fastest thing to recognise from two metres and the quantity is
+              // the thing that must not be got wrong, so they are adjacent and
+              // in that order. The picture never takes the quantity's weight.
+              if (thumb >= _thumbFloor) ...<Widget>[
+                KdsDishPhoto(productId: line.productId, side: thumb),
+                const SizedBox(width: KdsScale.gap),
+              ],
+              SizedBox(
+                width: 44,
+                child: Text(
+                  '${line.quantity} ×',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: KdsScale.bodySize,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
                   ),
                 ),
-                if (variant != null && variant.isNotEmpty)
-                  Text(
-                    variant,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: AppColors.textMuted,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      french ? line.nameFr : line.nameEn,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontSize: KdsScale.bodySize,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                // ⚠ One line PER GROUP, not one joined sentence (Q69). Three
-                // groups run together with middots wrap across a card that is
-                // read at arm's length, and the answer a cook needs ends up on
-                // the second line of a grey run.
-                for (final String entry in options)
-                  Text(
-                    entry,
-                    // ⚠ Keyed BY VALUE, not by a constant: two option rows in
-                    // one column with the same key is a duplicate-key assertion
-                    // that takes the whole board down, not a cosmetic warning.
-                    key: Key('kds-line-option-$entry'),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                if (removed.isNotEmpty)
-                  Text(
-                    removed.join(' · '),
-                    key: const Key('kds-line-removed'),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+                    if (variant != null && variant.isNotEmpty)
+                      Text(
+                        variant,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    // ⚠ One line PER GROUP, not one joined sentence (Q69). Three
+                    // groups run together with middots wrap across a card that is
+                    // read at arm's length, and the answer a cook needs ends up on
+                    // the second line of a grey run.
+                    for (final String entry in options)
+                      Text(
+                        entry,
+                        // ⚠ Keyed BY VALUE, not by a constant: two option rows in
+                        // one column with the same key is a duplicate-key assertion
+                        // that takes the whole board down, not a cosmetic warning.
+                        key: Key('kds-line-option-$entry'),
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    if (removed.isNotEmpty)
+                      Text(
+                        removed.join(' · '),
+                        key: const Key('kds-line-removed'),
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
+
+  /// The quantity column's fixed width — the one thing on a ticket line that
+  /// never gives way.
+  static const double _quantityColumn = 44;
+
+  /// The least room the dish name is left with before the picture goes.
+  static const double _nameFloor = 72;
+
+  /// Under this a thumbnail is a smudge, so it is omitted instead.
+  static const double _thumbFloor = 32;
 }

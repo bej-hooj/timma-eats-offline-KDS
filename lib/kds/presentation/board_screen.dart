@@ -216,6 +216,17 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
+    // ⚠ **The header has to survive a board nobody designed it for.** Measured
+    // 2026-11-23 at 640x400 dp: the logo, the title, the offline badge and
+    // *Couper l'alarme* ran 75 px past the right edge, and the overflow stripe
+    // was drawn straight through the mute button. Owner, same day: *"kitchen
+    // and born should fit any size cause it could be displayed on tv"* — which
+    // cuts both ways, and the small end is where things break.
+    //
+    // Compact keeps every control and every touch target; only the WORDS go.
+    // An icon-only badge and mute button still carry their meaning to a screen
+    // reader, and a 72 dp target is a 72 dp target either way.
+    final bool compact = MediaQuery.sizeOf(context).width < 760;
     return Row(
       children: <Widget>[
         // The TIMMA logo, so a kitchen tablet on a shelf of tablets is
@@ -257,7 +268,7 @@ class _Header extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.headlineLarge?.copyWith(
-              fontSize: KdsScale.headlineSize,
+              fontSize: compact ? KdsScale.titleSize : KdsScale.headlineSize,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -288,20 +299,31 @@ class _Header extends StatelessWidget {
         // being told. It is the only way "quiet evening" and "the wifi died"
         // are distinguishable from across a kitchen.
         if (!link.connected) ...<Widget>[
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: KdsScale.gapMd,
-              vertical: KdsScale.gap,
-            ),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.error,
-              borderRadius: BorderRadius.circular(KdsScale.gap),
-            ),
-            child: Text(
-              l10n.kdsOffline,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onError,
-                fontWeight: FontWeight.w700,
+          Semantics(
+            label: l10n.kdsOffline,
+            child: ExcludeSemantics(
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? KdsScale.gap : KdsScale.gapMd,
+                  vertical: KdsScale.gap,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error,
+                  borderRadius: BorderRadius.circular(KdsScale.gap),
+                ),
+                child: compact
+                    ? Icon(
+                        Icons.wifi_off,
+                        size: KdsScale.labelSize + 4,
+                        color: theme.colorScheme.onError,
+                      )
+                    : Text(
+                        l10n.kdsOffline,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onError,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -309,7 +331,25 @@ class _Header extends StatelessWidget {
         ],
         // Only while it is actually making noise. A permanent mute button is a
         // button somebody presses once, out of curiosity, at 11:00.
-        if (board.alarming)
+        if (board.alarming && compact)
+          // Same button, same 72 dp target, no label. A cook silencing an
+          // alarm is not reading the button.
+          Tooltip(
+            message: l10n.kdsMuteAlarm,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(KdsScale.minTarget, KdsScale.minTarget),
+                padding: EdgeInsets.zero,
+              ),
+              onPressed: onMute,
+              child: Semantics(
+                label: l10n.kdsMuteAlarm,
+                button: true,
+                child: const Icon(Icons.volume_off),
+              ),
+            ),
+          )
+        else if (board.alarming)
           FilledButton.icon(
             // ⚠ The theme's `minimumSize` is `Size.fromHeight` — **infinite
             // width** — because every other button on this board is a full-width

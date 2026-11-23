@@ -72,10 +72,29 @@ abstract final class KdsScale {
     // *Programmées* or *En livraison* has joined them, where scrolling a
     // genuinely crowded board is the honest answer.
     if (count <= spineLaneCount) {
-      return share.clamp(0, laneWidthMax);
+      // ⚠ **A floor even for the spine, just a much lower one.**
+      //
+      // The floor WAS removed here, and for a good reason: at 200 dp the four
+      // spine lanes needed 848 dp, the board had 796, the width clamped back
+      // up and *Prêtes* sat off the right edge behind a scroll.
+      //
+      // But "they fit whatever they are given" has no bottom, and a 640 dp
+      // screen gives each lane 136 dp — narrower than a ticket card can draw
+      // itself, which showed up as a RenderFlex overflow on the card's own
+      // header. Below [laneWidthFloor] the honest answer is the horizontal
+      // scroll the lane list already has: a cook can reach a lane that is off
+      // the edge, and cannot read one that is painted over.
+      //
+      // 160 is under the 187 dp the 796 dp board gives, so it never binds on
+      // any real board — only on screens too small to hold the spine at all.
+      return share.clamp(laneWidthFloor, laneWidthMax);
     }
     return share.clamp(laneWidthMin, laneWidthMax);
   }
+
+  /// The narrowest a lane may be drawn before the board scrolls instead.
+  /// Below this a ticket card cannot lay out its own header.
+  static const double laneWidthFloor = 160;
 
   /// Kept here rather than imported from `KdsLane` so this file stays free of
   /// domain imports; asserted equal to `KdsLane.spine.length` in the tests.
