@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.timmaeats" "\0"
-            VALUE "FileDescription", "timma_kds" "\0"
+            VALUE "CompanyName", "TIMMA Restaurant" "\0"
+            VALUE "FileDescription", "TIMMA Cuisine" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "timma_kds" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.timmaeats. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 TIMMA Restaurant. All rights reserved." "\0"
             VALUE "OriginalFilename", "timma_kds.exe" "\0"
-            VALUE "ProductName", "timma_kds" "\0"
+            VALUE "ProductName", "TIMMA Cuisine" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

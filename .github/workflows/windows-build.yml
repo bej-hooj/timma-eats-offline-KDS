@@ -84,15 +84,39 @@ jobs:
 
       - name: Name the build
         shell: bash
-        run: echo "STAMP=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+        run: |
+          echo "STAMP=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          # The version Windows shows in Settings → Apps, taken from the one
+          # place a version is declared.
+          echo "APPVERSION=$(grep -m1 '^version:' pubspec.yaml \
+            | sed 's/version: *//; s/+.*//')" >> $GITHUB_ENV
 
-      # The whole Release folder, not just the .exe: a Flutter Windows app
-      # needs its DLLs and its `data/` directory beside it, and an .exe posted
-      # on its own is the classic "it does not start" support call.
+      # ⚠ An INSTALLER, not a folder to unpack. Owner, 2026-11-23: the kitchen
+      # PC needs a desktop shortcut, not a path to remember. A zip also invites
+      # the one failure that looks like a broken app — running the .exe from
+      # inside it, without its `data\` folder beside it.
+      #
+      # Inno Setup 6 ships on the `windows-latest` image; the install below is
+      # only there for the day it does not.
+      - name: Build the installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup not found at $iscc" }
+          & $iscc /DAppVersion=$env:APPVERSION `
+            "/DSourceDir=$($PWD.Path)\build\windows\x64\runner\Release" `
+            /O"$($PWD.Path)\build\installer" `
+            windows\installer\timma-cuisine.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed: $LASTEXITCODE" }
+          Get-ChildItem build\installer
+
       - name: Package
         uses: actions/upload-artifact@v4
         with:
-          name: timma-cuisine-windows-${{ env.STAMP }}
-          path: build/windows/x64/runner/Release/
+          name: timma-cuisine-setup-${{ env.STAMP }}
+          path: build/installer/TIMMA-Cuisine-Setup.exe
           if-no-files-found: error
           retention-days: 30
