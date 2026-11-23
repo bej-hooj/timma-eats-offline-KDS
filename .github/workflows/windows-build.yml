@@ -52,9 +52,19 @@ jobs:
           ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
           git config --global url."git@github.com:".insteadOf "https://github.com/"
 
+      # ⚠ The EXACT SDK the Android build and the suite were proven on, not
+      # `channel: stable`. A floating channel means CI compiles with whatever
+      # Flutter shipped this week: the first run of this workflow drew 3.50.1,
+      # which deprecates `package:flutter/material.dart` and failed `analyze`
+      # on 14 issues no developer here can see. Worse than the red build is the
+      # green one it would have been — a kitchen binary built from a different
+      # framework than the tablet it has to pair with.
+      #
+      # Bump this deliberately, together with the local SDK, never silently.
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: 3.47.9
           channel: stable
           cache: true
 
