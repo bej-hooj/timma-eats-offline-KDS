@@ -21,34 +21,48 @@ APK. There is no second codebase and no fork.
 
 ## 1 · What the owner does on the PC (every update)
 
-1. Open **Edge** and go to the kitchen board's **Releases** page.
+1. Open **Edge** and go to the kitchen board's **Releases** page — always the
+   same link, `cuisine-win-20261123`. New builds replace the file there; there
+   is never a second place to look.
 2. Sign in to GitHub **once** on this PC. Edge remembers it; later updates are
    a single click.
-3. Download `timma-cuisine-windows-<date>.zip`.
-4. Right-click the zip → **Extract All…** → extract to `C:\TIMMA\Cuisine`
-   (replacing what is there, on an update).
-5. Double-click **`timma_kds.exe`**.
+3. Download **`TIMMA-Cuisine-Setup.exe`**.
+4. Double-click it. Keep **"Créer une icône sur le Bureau"** ticked.
+5. Open **TIMMA Cuisine** from the desktop.
 
-⚠ **Unzip it before running.** Windows will happily open an `.exe` from inside
-a zip preview, and it starts without the `data\` folder beside it and fails
-with no useful message. Everything in that folder is required — the `.exe`, the
-DLLs and `data\`.
+That is the whole procedure. There is nothing to unzip, no folder to remember
+and no path to type — owner, 2026-11-23: *"i really want windows vertion to be
+installing version with a shortcut on desktop so the user wont have to go find
+it in timma/cuisine"*.
+
+An update is the same five steps: run the new setup and it replaces the
+installed copy in place, keeping the shortcuts and the pairing.
 
 ### The first run asks two things
 
-- **"Windows protected your PC" (SmartScreen).** The build is not
+- **"Windows protected your PC" (SmartScreen).** The installer is not
   code-signed — signing a Windows binary needs a certificate TIMMA does not
   have yet. Click **More info → Run anyway**. It appears once per downloaded
   copy.
-- **Windows Defender Firewall.** Tick **Private networks** and allow it. The
-  board finds the borne over the restaurant's wifi; blocked, it will show
-  *"Cuisine non appairée"* forever and no ticket will ever arrive.
+- **Windows Defender Firewall**, the first time the board itself runs. Tick
+  **Private networks** and allow it. The board finds the borne over the
+  restaurant's wifi; blocked, it will show *"Cuisine non appairée"* forever
+  and no ticket will ever arrive.
 
-### Make it start with the PC
+### Start it with the PC
 
-Press **Win + R**, type `shell:startup`, Enter, and drop a **shortcut** to
-`C:\TIMMA\Cuisine\timma_kds.exe` in the folder that opens. The PC can then be
-switched on in the morning by anyone.
+Tick **"Lancer TIMMA Cuisine au démarrage de l'ordinateur"** during setup. If
+it was missed, run the setup again and tick it. The PC can then be switched on
+in the morning by anyone.
+
+### Removing it
+
+Settings → Apps → **TIMMA Cuisine** → Uninstall, like any other program.
+
+⚠ **Setup installs for the current user only**, into that account's own
+folder, so it never asks for an administrator password — nobody in a kitchen
+has those at eight in the morning. The consequence: install it under the
+account the kitchen actually signs into.
 
 ---
 
@@ -80,17 +94,34 @@ internet. The borne is the hub; the board connects out to it.
 gh workflow run windows-build.yml -f ref=main
 ```
 
-Then, when it is green, attach the zip to a release so the PC has a stable
-page to download from:
+Then, when it is green, put the setup on the **existing** release — owner,
+2026-11-23: *"it should be updated on this link no elsewhere i want things to
+be in one place"*. `--clobber` replaces the file on the same tag, so the link
+the kitchen PC has bookmarked never changes:
 
 ```bash
-gh run download <run-id> -D /tmp/cuisine && \
-  cd /tmp/cuisine/timma-cuisine-windows-* && zip -qr /tmp/cuisine.zip . && \
-  gh release create cuisine-win-$(date +%Y%m%d-%H%M) /tmp/cuisine.zip \
-    --title "Cuisine Windows $(date +%Y-%m-%d)" --notes "…"
+gh run download <run-id> -D /tmp/setup && gh release upload cuisine-win-20261123 /tmp/setup/*/TIMMA-Cuisine-Setup.exe --clobber
 ```
 
+⚠ **Never `gh release create` a new tag for a new build.** A second release
+page is a second answer to "where do I get it", and the kitchen will end up
+running whichever one it finds first.
+
 Pushing a tag matching `cuisine-win-*` builds automatically as well.
+
+### What the installer is
+
+`windows/installer/timma-cuisine.iss`, built by the runner with Inno Setup 6.
+Its `AppId` GUID is fixed and must stay fixed: it is how Windows recognises
+the existing installation and upgrades it in place rather than leaving two
+TIMMA Cuisines on the PC.
+
+The icon comes from `tool/make_windows_icon.py`, which builds
+`windows/runner/resources/app_icon.ico` out of `assets/branding/app_icon.png`.
+`flutter create` leaves Flutter's own icon there and nothing in a Flutter
+build replaces it — which is why the first Windows build shipped with the
+wrong logo on the taskbar. Change the brand PNG, run the script, commit the
+`.ico`.
 
 ⚠ **The runner's Flutter version is pinned** (3.47.9) and must match the SDK
 the Android board and the test suite were proven on. `channel: stable` drew
