@@ -199,7 +199,12 @@ void main() {
     await tester.pump();
 
     final String station = stationCodeFor(identity.deviceId);
-    expect(find.text('Ticket $station-01'), findsOneWidget);
+    // Four characters since 2026-11-23 (owner): station + a permutation of the
+    // sequence, no separator. Derived through the same function the card uses,
+    // never retyped.
+    final String code = '$station${ticketSequenceCode(1)}';
+    expect(code, matches(RegExp(r'^[A-Z0-9]{4}$')));
+    expect(find.text('Ticket $code'), findsOneWidget);
     expect(
       find.text('Ticket 1'),
       findsNothing,
