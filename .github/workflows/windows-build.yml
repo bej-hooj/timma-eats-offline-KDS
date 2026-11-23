@@ -1,0 +1,88 @@
+name: Kitchen board — Windows build
+
+# Builds the cuisine for the restaurant's Windows PC and attaches the result
+# as a downloadable zip.
+#
+# ⚠ Why this exists: Flutter cannot cross-compile desktop. A Windows build has
+# to be produced ON Windows, and putting the Flutter SDK and the Visual Studio
+# C++ toolchain on a restaurant's PC is several gigabytes of download before
+# anyone can cook. This runner does it instead, and the PC only downloads the
+# finished app.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or tag to build
+        required: false
+        default: main
+  push:
+    tags:
+      - 'cuisine-win-*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the kitchen board
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      # ⚠ The `pos_*` packages are git dependencies on the SCHEMA OWNER's
+      # repository, which is private. The job's built-in token only reaches
+      # THIS repository, so `pub get` would fail on a 404 that reads like a
+      # typo.
+      #
+      # ⚠ A **read-only deploy key on that one repository**, not a personal
+      # access token. A PAT carries the owner's whole account; this carries
+      # read access to one repo, is revocable on its own, and cannot write.
+      #
+      # The URL is rewritten rather than edited in `pubspec.yaml`: the pins
+      # must stay byte-identical to what a developer resolves locally, or CI
+      # would be building something nobody else can reproduce.
+      - name: Let pub reach the private package repository
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.POS_PACKAGES_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          git config --global url."git@github.com:".insteadOf "https://github.com/"
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze lib
+
+      # The suite is the same one that runs on a developer's machine. A board
+      # that fails it has no business reaching a kitchen.
+      - name: Test
+        run: flutter test
+
+      - name: Build
+        run: flutter build windows --release
+
+      - name: Name the build
+        shell: bash
+        run: echo "STAMP=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+
+      # The whole Release folder, not just the .exe: a Flutter Windows app
+      # needs its DLLs and its `data/` directory beside it, and an .exe posted
+      # on its own is the classic "it does not start" support call.
+      - name: Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: timma-cuisine-windows-${{ env.STAMP }}
+          path: build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 30
