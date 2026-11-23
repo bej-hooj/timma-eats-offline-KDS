@@ -60,7 +60,14 @@ class KdsTicketCard extends StatelessWidget {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
     final KdsUrgency urgency = KdsSla.urgencyOf(order, now);
-    final int waited = now.difference(KdsSla.agedFrom(order)).inMinutes;
+    // Local ticket code first (it is on the printed slip the customer holds),
+    // then the server's kitchen code, then the order code.
+    final String? identity =
+        order.ticketLabelOrNull ??
+        _clean(order.dailyCode) ??
+        _clean(order.orderCode);
+    final Duration waiting = now.difference(KdsSla.agedFrom(order));
+    final int waited = waiting.inMinutes;
     final bool paid = order.paymentStatus == PosPaymentStatus.paid;
     final bool french = Localizations.localeOf(context).languageCode == 'fr';
 
@@ -118,7 +125,18 @@ class KdsTicketCard extends StatelessWidget {
                           ),
                           const SizedBox(width: KdsScale.gap),
                           Text(
-                            l10n.kdsWaitingMinutes(waited),
+                            // ⚠ **Hours past three of them, never minutes.**
+                            // Seen on the real board 2026-11-23: a ticket
+                            // synced down from the cloud read **142411 min**,
+                            // which is three months expressed in a unit for
+                            // tens. It is not a wrong number — it is a number
+                            // in a unit nobody can read, on the mark a cook is
+                            // meant to glance at. A board whose urgency mark
+                            // is noise is a board that trains people to ignore
+                            // the mark.
+                            waiting < const Duration(hours: 3)
+                                ? l10n.kdsWaitingMinutes(waited)
+                                : l10n.kdsWaitingLong(waiting.inHours),
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: _urgencyColor(theme, urgency),
                               fontWeight: FontWeight.w700,
@@ -138,15 +156,34 @@ class KdsTicketCard extends StatelessWidget {
              * a wrong station sends a cook to the wrong customer, which is
              * worse than no station at all.
              */
-                      if (order.ticketLabelOrNull != null)
+                      // ⚠ A ticket from the CLOUD has no local number — it was
+                      // not printed by any borne here — so it fell through
+                      // this `if` and the card carried NOTHING a cook could
+                      // call out. `daily_code` is the kitchen's own code,
+                      // minted by the server for exactly this (ECOSYSTEM
+                      // §6.4), and `order_code` is the last resort.
+                      if (identity != null)
                         Text(
-                          l10n.kdsTicket(order.ticketLabelOrNull!),
+                          l10n.kdsTicket(identity),
                           style: theme.textTheme.titleLarge,
                         ),
                       if (lines.isNotEmpty) ...<Widget>[
                         const SizedBox(height: KdsScale.gapMd),
                         for (final PosOrderLine line in lines)
                           _Line(line: line, french: french, l10n: l10n),
+                      ] else ...<Widget>[
+                        // ⚠ A card with no dishes on it looks like a bug, and
+                        // a cook cannot tell "nothing ordered" from "the
+                        // detail has not arrived". Say which.
+                        const SizedBox(height: KdsScale.gapMd),
+                        Text(
+                          l10n.kdsLinesPending,
+                          key: const Key('kds-lines-pending'),
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: AppColors.textMuted,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       ],
                       if (order.note != null &&
                           order.note!.trim().isNotEmpty) ...<Widget>[
@@ -199,6 +236,11 @@ class KdsTicketCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String? _clean(String? value) {
+    final String? trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   Color _urgencyColor(ThemeData theme, KdsUrgency urgency) => switch (urgency) {

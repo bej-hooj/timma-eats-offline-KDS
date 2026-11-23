@@ -305,15 +305,28 @@ class _Lane extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
+            // The count is the fixed part and the title bends around it: a
+            // lane that shows its name and hides how much work is in it has
+            // the priority backwards.
             children: <Widget>[
               Flexible(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: KdsScale.titleSize,
-                    fontWeight: FontWeight.w700,
+                // ⚠ **Scaled down, not cut off.** Seen on the real board
+                // 2026-11-23: *En préparation* rendered as *"En prépara…"*.
+                // Four lanes share whatever width the screen has, French is
+                // the longer language, and an ellipsis on a lane heading makes
+                // the board read as broken on the one screen that is looked at
+                // from two metres. `scaleDown` only ever shrinks — a short
+                // title keeps the full size.
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: KdsScale.titleSize,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),

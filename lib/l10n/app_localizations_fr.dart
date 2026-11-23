@@ -30,6 +30,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get kdsLaneOutForDelivery => 'En livraison';
 
   @override
+  String kdsWaitingLong(int hours) {
+    return '+$hours h';
+  }
+
+  @override
+  String get kdsLinesPending => 'Détail non reçu';
+
+  @override
   String get kdsLaneEmpty => 'Rien ici';
 
   @override

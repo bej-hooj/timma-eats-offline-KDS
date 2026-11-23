@@ -140,6 +140,18 @@ abstract class AppLocalizations {
   /// **'En livraison'**
   String get kdsLaneOutForDelivery;
 
+  /// A ticket older than a few hours: hours, not an unreadable minute count.
+  ///
+  /// In fr, this message translates to:
+  /// **'+{hours} h'**
+  String kdsWaitingLong(int hours);
+
+  /// A ticket whose lines have not reached this board.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détail non reçu'**
+  String get kdsLinesPending;
+
   /// No description provided for @kdsLaneEmpty.
   ///
   /// In fr, this message translates to:

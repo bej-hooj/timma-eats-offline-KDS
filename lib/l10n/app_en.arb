@@ -6,6 +6,15 @@
   "kdsLanePreparing": "Preparing",
   "kdsLaneReady": "Ready",
   "kdsLaneOutForDelivery": "Out for delivery",
+  "kdsWaitingLong": "+{hours} h",
+  "@kdsWaitingLong": {
+    "description": "A ticket older than a few hours: hours, not an unreadable minute count.",
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "kdsLinesPending": "Details not received",
+  "@kdsLinesPending": {
+    "description": "A ticket whose lines have not reached this board."
+  },
   "kdsLaneEmpty": "Nothing here",
   "kdsSettleCash": "Take cash",
   "kdsAccept": "Accept",

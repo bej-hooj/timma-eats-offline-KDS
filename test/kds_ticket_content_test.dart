@@ -259,6 +259,118 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  /// What the real board showed on 2026-11-23, screenshotted on the Samsung:
+  /// a ticket synced down from the cloud, carrying **"142411 min"**, no ticket
+  /// number at all, and not one dish — a card that reads as a broken app.
+  group('a ticket that came down from the cloud', () {
+    void insertCloudTicket({
+      String? dailyCode = 'K14',
+      String? orderCode = 'TME-2026-0007',
+      DateTime? placedAt,
+    }) {
+      final DateTime at = placedAt ?? DateTime.utc(2026, 8, 19, 12);
+      store.insertOrder(
+        PosOrder(
+          clientId: 'cloud-1',
+          branchId: 'branch-1',
+          origin: PosOrderOrigin.remote,
+          source: PosOrderSource.app,
+          mode: PosOrderMode.pickup,
+          status: PosOrderStatus.ready,
+          paymentStatus: PosPaymentStatus.paid,
+          paymentMethod: PosPaymentMethod.payAtCounter,
+          deviceSeq: 0,
+          // ⚠ The whole point: a cloud ticket was not printed by any borne
+          // here, so it has NO local number.
+          subtotal: 1000,
+          discount: 0,
+          deliveryFee: 0,
+          total: 1000,
+          placedAtDevice: at,
+          statusChangedAt: at,
+          dailyCode: dailyCode,
+          orderCode: orderCode,
+        ),
+        const <PosOrderLine>[],
+      );
+    }
+
+    Future<void> show(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(2280, 1080);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+          ],
+          child: const KdsApp(),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('is identified by the kitchen code the server minted', (
+      tester,
+    ) async {
+      insertCloudTicket();
+      await show(tester);
+
+      // Before this, the card showed nothing a cook could call out: the
+      // identity line was behind `if (ticketLabelOrNull != null)`.
+      expect(find.text('Ticket K14'), findsOneWidget);
+    });
+
+    testWidgets('falls back to the order code, never to nothing', (
+      tester,
+    ) async {
+      insertCloudTicket(dailyCode: null);
+      await show(tester);
+
+      expect(find.text('Ticket TME-2026-0007'), findsOneWidget);
+    });
+
+    testWidgets('says the detail has not arrived, instead of looking empty', (
+      tester,
+    ) async {
+      insertCloudTicket();
+      await show(tester);
+
+      // A cook cannot tell "nothing ordered" from "the lines never came" on a
+      // blank card, and one of those is a bug they should report.
+      expect(find.byKey(const Key('kds-lines-pending')), findsOneWidget);
+    });
+
+    testWidgets('shows its age in HOURS, never 142411 min', (tester) async {
+      // Three months old, which is what a stale cloud row actually is.
+      insertCloudTicket(
+        placedAt: DateTime.now().toUtc().subtract(const Duration(days: 98)),
+      );
+      await show(tester);
+
+      expect(
+        find.textContaining('min'),
+        findsNothing,
+        reason: 'minutes is a unit for tens, and this is six figures of them',
+      );
+      expect(
+        find.textContaining(RegExp(r'\+\d+'), skipOffstage: false),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a fresh ticket still reads in minutes', (tester) async {
+      insertCloudTicket(
+        placedAt: DateTime.now().toUtc().subtract(const Duration(minutes: 7)),
+      );
+      await show(tester);
+
+      // The switch is at three hours; below it minutes are what a cook wants.
+      expect(find.text('7 min'), findsOneWidget);
+    });
+  });
+
   testWidgets('the lanes are the take-away spine, not six fixed columns', (
     tester,
   ) async {
