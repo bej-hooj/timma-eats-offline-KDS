@@ -7,6 +7,7 @@ import 'package:pos_link/pos_link.dart';
 import 'package:pos_link_flutter/pos_link_flutter.dart';
 
 import '../pairing/pairing_controller.dart';
+import '../menu/kds_dish_photos.dart';
 import '../state/kds_board.dart';
 
 /// Where the hub was last seen, remembered across restarts.
@@ -310,6 +311,10 @@ class KdsLinkController extends Notifier<KdsLinkState> {
       debugPrint('[KdsLink] a snapshot would not merge: $error');
       return;
     }
+    // The dashboard's photographs, resolved by the borne from its active
+    // bundle. Absorbed BEFORE the board re-reads so the cards that are about
+    // to be built already know their pictures.
+    ref.read(kdsDishPhotosProvider.notifier).absorb(snapshot.photos);
     state = state.copyWith(boardsReceived: state.boardsReceived + 1);
     ref.read(kdsBoardProvider.notifier).refresh();
   }

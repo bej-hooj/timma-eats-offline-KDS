@@ -5,6 +5,7 @@ import 'package:timma_kds/design/app_tokens.dart';
 import 'package:timma_kds/design/money_formatter.dart';
 import 'package:timma_kds/l10n/app_localizations.dart';
 import '../../domain/kds_lanes.dart';
+import '../../menu/kds_dish_photos.dart';
 import '../../theme/kds_scale.dart';
 
 /// One ticket, carrying its identity (ECOSYSTEM §1.6).
@@ -338,6 +339,13 @@ class _Line extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          // ⚠ **Picture, then quantity, then the dish.** The photograph is
+          // the fastest thing to recognise from two metres and the quantity is
+          // the thing that must not be got wrong, so they are adjacent and in
+          // that order. The picture never takes the quantity's weight: the
+          // number stays the loudest mark on the line.
+          KdsDishPhoto(productId: line.productId, side: KdsScale.thumbSide),
+          const SizedBox(width: KdsScale.gap),
           SizedBox(
             width: 44,
             child: Text(

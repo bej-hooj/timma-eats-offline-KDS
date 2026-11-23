@@ -209,7 +209,11 @@ class KdsPairingController extends Notifier<KdsPairingState> {
     if (hub == null || state.joining) {
       return;
     }
-    state = state.copyWith(joining: true, clearError: true, clearAwaiting: true);
+    state = state.copyWith(
+      joining: true,
+      clearError: true,
+      clearAwaiting: true,
+    );
 
     final PosStore store = ref.read(kdsStoreProvider);
     final PosDeviceIdentity identity = PosDeviceIdentity(

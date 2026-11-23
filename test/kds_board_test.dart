@@ -211,9 +211,9 @@ void main() {
     PosOrder cooked() {
       final PlacedOrder placed = ring();
       engine.settleCounterCash(placed.order.clientId);
-      return engine.store
-          .openOrders()
-          .firstWhere((PosOrder o) => o.clientId == placed.order.clientId);
+      return engine.store.openOrders().firstWhere(
+        (PosOrder o) => o.clientId == placed.order.clientId,
+      );
     }
 
     test('an unpaid ticket sounds the counter register', () {
@@ -300,10 +300,7 @@ void main() {
       alarm.evaluate(lanes: both, now: t0);
       alarm.mute();
       expect(
-        alarm.evaluate(
-          lanes: both,
-          now: t0.add(const Duration(seconds: 5)),
-        ),
+        alarm.evaluate(lanes: both, now: t0.add(const Duration(seconds: 5))),
         isNull,
         reason:
             'Couper l\'alarme is one button on a tablet; silencing only the '

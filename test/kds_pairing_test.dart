@@ -224,7 +224,10 @@ void _codeStepFitsTests() {
 
     // ⚠ The ONE-TAP action is what a cook meets first now, so it is what must
     // be on screen first. Asserted before the code path is even revealed.
-    final Finder tap = find.widgetWithText(FilledButton, 'Apparier en un geste');
+    final Finder tap = find.widgetWithText(
+      FilledButton,
+      'Apparier en un geste',
+    );
     expect(tap, findsOneWidget);
     final Size screenSize =
         tester.view.physicalSize / tester.view.devicePixelRatio;

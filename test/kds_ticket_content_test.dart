@@ -677,7 +677,8 @@ void _theActionIsAlwaysOnScreen() {
     expect(
       rect.bottom,
       lessThanOrEqualTo(screen.height),
-      reason: 'the action ran ${rect.bottom - screen.height} dp past the '
+      reason:
+          'the action ran ${rect.bottom - screen.height} dp past the '
           'bottom of a ${screen.height} dp screen — a cook cannot press it',
     );
     expect(rect.top, greaterThanOrEqualTo(0));

@@ -31,6 +31,18 @@ abstract final class KdsScale {
 
   static const double radius = 16;
 
+  /// For small square things inside a card — a dish thumbnail. The card's own
+  /// 16 looks like a bubble at 56 dp; half of it reads as the same family.
+  static const double radiusSmall = 8;
+
+  /// A dish thumbnail on a ticket line.
+  ///
+  /// 52, not 72: this is a RECOGNITION aid for a cook who is already holding
+  /// the card's name in view, not the kiosk's shopping picture. It also has to
+  /// coexist with up to five option lines per dish on a card that already
+  /// scrolls, and every dp here comes off the text a cook actually reads.
+  static const double thumbSide = 52;
+
   /// The widest a lane column should ever be, on a big kitchen tablet.
   static const double laneWidthMax = 320;
 
