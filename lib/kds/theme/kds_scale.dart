@@ -80,4 +80,84 @@ abstract final class KdsScale {
   /// Kept here rather than imported from `KdsLane` so this file stays free of
   /// domain imports; asserted equal to `KdsLane.spine.length` in the tests.
   static const int spineLaneCount = 4;
+
+  /// A lane heading never shrinks below this. Under it the board is being
+  /// asked to do something it cannot do well, and an ellipsis is the honest
+  /// answer rather than type nobody can read from two metres.
+  static const double laneTitleMinSize = 16;
+
+  /// The ONE size every lane heading uses, chosen so the longest of [titles]
+  /// fits the room a lane actually has — **over two lines**.
+  ///
+  /// ⚠ **Shared, not per lane.** Letting each heading shrink on its own —
+  /// which is what a `FittedBox` per lane does — gives four different type
+  /// sizes across four adjacent columns, and the board reads as if the
+  /// headings were ranked. Measured on the Samsung 2026-11-23: *En
+  /// préparation* came out visibly smaller than *Prêtes* beside it.
+  ///
+  /// ⚠ **Two lines, and the constraint is the longest WORD.** On the Samsung
+  /// a lane is 183 dp wide: *En préparation* on ONE line needs about 13 dp of
+  /// type, which is not a heading on a board read from two metres. Across two
+  /// lines the binding constraint becomes *préparation* on its own, and the
+  /// same lane carries it at about 22 dp. A board on a television has lanes
+  /// four times as wide and every title stays at [titleSize] — this only ever
+  /// shrinks.
+  ///
+  /// [measure] returns the width of a string at [titleSize]; the caller
+  /// supplies it so this stays a pure function of numbers and can be checked
+  /// without a widget tree. It must measure at the viewer's own text scale —
+  /// see `_measure` in `board_screen.dart` for what ignoring that cost.
+  static double laneTitleSize({
+    required Iterable<String> titles,
+    required double laneWidth,
+    required double countChipWidth,
+    required double Function(String) measure,
+  }) {
+    // The lane's own padding, the gap before the count, and the count chip.
+    //
+    // ⚠ And a cushion, measured rather than guessed: probed on the Samsung,
+    // the computation returned a size whose laid-out line was within a
+    // fraction of a dp of its box, and text layout rounds the wrong way at
+    // that margin. A heading that fits EXACTLY is a heading that ellipsizes.
+    final double room = laneWidth - gapMd * 2 - gap - countChipWidth - _cushion;
+    if (room <= 0) {
+      return laneTitleMinSize;
+    }
+    double scale = 1;
+    void limit(double value) {
+      if (value > 0 && value < scale) {
+        scale = value;
+      }
+    }
+
+    for (final String title in titles) {
+      // No word may be cut, whatever wrapping does.
+      for (final String word in title.split(' ')) {
+        limit(room / measure(word));
+      }
+      // And the whole title has to land inside two of those lines. The 0.95
+      // is for the wrap itself: two lines of a two-word title are never two
+      // perfectly full lines.
+      limit(room * 2 * 0.95 / measure(title));
+    }
+    final double size = titleSize * scale;
+    return size.clamp(laneTitleMinSize, titleSize);
+  }
+
+  /// A lane heading is drawn on at most this many lines.
+  static const int laneTitleMaxLines = 2;
+
+  /// Slack between the longest heading and its box. See [laneTitleSize].
+  static const double _cushion = 6;
+
+  /// The horizontal padding inside the count chip, both sides together. The
+  /// caller adds it to the measured digits.
+  static const double laneCountChipPadding = gap * 2;
+
+  /// A lane heading never goes under this once the chip is measured
+  /// accurately; below it the type is too small for a board read at two
+  /// metres, and the honest answer is a shorter lane name, not smaller type.
+  ///
+  /// Kept well under [titleSize] so French — the longer language, and the one
+  /// the board runs in — never reaches it on the four spine lanes.
 }

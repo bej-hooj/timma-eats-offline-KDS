@@ -53,12 +53,61 @@ class KdsBoardScreen extends ConsumerWidget {
                         available: box.maxWidth,
                         count: lanes.length,
                       );
+                      // One size for every heading, chosen from the longest —
+                      // see [KdsScale.laneTitleSize].
+                      final TextStyle base = Theme.of(context)
+                          .textTheme
+                          .titleLarge!
+                          .copyWith(
+                            fontSize: KdsScale.titleSize,
+                            fontWeight: FontWeight.w700,
+                          );
+                      // The chip is measured at its own style, for the widest
+                      // count actually on the board.
+                      final TextStyle countStyle = Theme.of(context)
+                          .textTheme
+                          .titleLarge!
+                          .copyWith(
+                            fontSize: KdsScale.bodySize,
+                            fontWeight: FontWeight.w800,
+                          );
+                      final TextScaler scaler = MediaQuery.textScalerOf(
+                        context,
+                      );
+                      double chip = 0;
+                      for (final String lane in lanes) {
+                        final double w = _measure(
+                          '${board.lane(lane).length}',
+                          countStyle,
+                          scaler,
+                        );
+                        if (w > chip) {
+                          chip = w;
+                        }
+                      }
+                      final double titleSize = KdsScale.laneTitleSize(
+                        titles: <String>[
+                          for (final String lane in lanes)
+                            _laneTitle(l10n, lane),
+                        ],
+                        laneWidth: width,
+                        countChipWidth: chip + KdsScale.laneCountChipPadding,
+                        measure: (String text) => _measure(text, base, scaler),
+                      );
                       return ListView(
                         scrollDirection: Axis.horizontal,
                         children: <Widget>[
-                          for (final String lane in lanes)
+                          for (final (int index, String lane) in lanes.indexed)
                             _Lane(
                               width: width,
+                              titleSize: titleSize,
+                              // ⚠ Owner, 2026-11-23: *"make distinction in
+                              // columns by alternating their background color
+                              // light level"*. Four columns of the same white
+                              // on one cream field give the eye nothing but a
+                              // hairline to find a lane edge by, from two
+                              // metres, in a kitchen.
+                              tinted: index.isOdd,
                               title: _laneTitle(l10n, lane),
                               orders: board.lane(lane),
                               linesOf: board.linesOf,
@@ -114,6 +163,29 @@ class KdsBoardScreen extends ConsumerWidget {
       await ref.read(kdsLinkProvider.notifier).stop();
       ref.read(kdsIdentityProvider.notifier).requirePairing();
     }
+  }
+
+  /// The width [text] would take at [style]. A `TextPainter` rather than a
+  /// widget, because the size has to be known BEFORE the headings are built —
+  /// they all have to agree on it.
+  ///
+  /// ⚠⚠ **[scaler] is not optional, and leaving it out is why this defect
+  /// survived three attempts.** The Samsung in the kitchen is set to font
+  /// scale **1.1** — a perfectly ordinary accessibility setting — so every
+  /// heading rendered 10% wider than this function said it would, and *En
+  /// préparation* kept coming back as *"En préparat…"* while the arithmetic
+  /// insisted it fitted. A measurement that ignores the viewer's own text
+  /// scale is not a measurement of what the viewer sees.
+  static double _measure(String text, TextStyle style, TextScaler scaler) {
+    final TextPainter painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    final double width = painter.width;
+    painter.dispose();
+    return width;
   }
 
   static String _laneTitle(AppLocalizations l10n, String lane) =>
@@ -276,9 +348,16 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// The line box of a lane heading, as a multiple of its type size. Declared
+/// once because the reserved height and the rendered text have to agree — a
+/// reserved height computed from a different number is a clipped heading.
+const double _laneTitleLineHeight = 1.1;
+
 class _Lane extends StatelessWidget {
   const _Lane({
     required this.width,
+    required this.titleSize,
+    required this.tinted,
     required this.title,
     required this.orders,
     required this.linesOf,
@@ -288,6 +367,10 @@ class _Lane extends StatelessWidget {
   });
 
   final double width;
+  final double titleSize;
+
+  /// Every other lane sits one step darker, so the columns alternate.
+  final bool tinted;
   final String title;
   final List<PosOrder> orders;
   final List<PosOrderLine> Function(String clientId) linesOf;
@@ -301,6 +384,30 @@ class _Lane extends StatelessWidget {
     return Container(
       width: width,
       margin: const EdgeInsets.only(right: KdsScale.gapMd),
+      // ⚠ **A lane is a column, and a column has edges.** Screenshotted on the
+      // real board 2026-11-23: four headings floating on one flat cream field,
+      // with nothing saying where one queue ended and the next began. On a
+      // screen read from two metres across a kitchen that is not a style
+      // preference — a cook has to find THEIR lane before they can read a
+      // ticket in it.
+      //
+      // The surface is white on the cream canvas, which is the ladder the
+      // tokens already define (canvas < white card < muted field); no new
+      // colour, no shadow, and a hairline border so an empty lane still has a
+      // shape.
+      decoration: BoxDecoration(
+        // ⚠ Both steps stay ABOVE the cream page: the alternation separates
+        // the lanes from each other, and the border plus the step above
+        // `canvas` is what separates every lane from the board. A lane painted
+        // in the page's own colour would read as a gap, not a column.
+        //
+        // The ticket cards inside are white and carry a 3 dp urgency border,
+        // so they stand off both steps — checked on the device, not assumed.
+        color: tinted ? AppColors.surfaceMuted : AppColors.surface,
+        borderRadius: BorderRadius.circular(KdsScale.radius),
+        border: Border.all(color: AppColors.outline),
+      ),
+      padding: const EdgeInsets.all(KdsScale.gapMd),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -308,42 +415,95 @@ class _Lane extends StatelessWidget {
             // The count is the fixed part and the title bends around it: a
             // lane that shows its name and hides how much work is in it has
             // the priority backwards.
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Flexible(
-                // ⚠ **Scaled down, not cut off.** Seen on the real board
-                // 2026-11-23: *En préparation* rendered as *"En prépara…"*.
-                // Four lanes share whatever width the screen has, French is
-                // the longer language, and an ellipsis on a lane heading makes
-                // the board read as broken on the one screen that is looked at
-                // from two metres. `scaleDown` only ever shrinks — a short
-                // title keeps the full size.
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: KdsScale.titleSize,
-                      fontWeight: FontWeight.w700,
+                // ⚠ Sized by the board, not by this lane. Seen on the real
+                // board 2026-11-23: *En préparation* rendered first as
+                // *"En prépara…"*, then — with a per-lane `FittedBox` —
+                // visibly smaller than *Prêtes* beside it. Four adjacent
+                // columns with four type sizes read as if they were ranked.
+                // The ellipsis stays as the last resort below the floor.
+                // ⚠ **Two lines of room are reserved whether or not the
+                // title uses them.** Otherwise *En préparation* (two lines)
+                // pushes its divider lower than the three one-line lanes
+                // beside it, and four columns that should read as one row of
+                // headings read as a ragged edge.
+                child: SizedBox(
+                  height:
+                      titleSize *
+                      _laneTitleLineHeight *
+                      KdsScale.laneTitleMaxLines *
+                      MediaQuery.textScalerOf(context).scale(1),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(
+                      title,
+                      maxLines: KdsScale.laneTitleMaxLines,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontSize: titleSize,
+                        fontWeight: FontWeight.w700,
+                        height: _laneTitleLineHeight,
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: KdsScale.gap),
-              Text(
-                '${orders.length}',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontSize: KdsScale.titleSize,
-                  color: AppColors.textMuted,
+              // The count reads as a tally, not as part of the name.
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: orders.isEmpty
+                      // On a tinted lane the muted chip would vanish into its
+                      // own background.
+                      ? (tinted ? AppColors.surface : AppColors.surfaceMuted)
+                      : AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(KdsScale.radiusSmall),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: KdsScale.gap,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    '${orders.length}',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: KdsScale.bodySize,
+                      fontWeight: FontWeight.w800,
+                      color: orders.isEmpty
+                          ? AppColors.textMuted
+                          : AppColors.primary,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
+          const SizedBox(height: KdsScale.gap),
+          Divider(height: 1, thickness: 1, color: AppColors.outline),
           const SizedBox(height: KdsScale.gapMd),
           Expanded(
             child: orders.isEmpty
-                ? Text(emptyLabel, style: theme.textTheme.labelLarge)
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 32,
+                          color: AppColors.outline,
+                        ),
+                        const SizedBox(height: KdsScale.gap),
+                        Text(
+                          emptyLabel,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 // The lane's own height is passed down so no card can grow
                 // taller than the space a cook can see — see
                 // `KdsTicketCard.maxHeight`.
