@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pos_core/pos_core.dart';
@@ -11,6 +12,36 @@ import 'package:timma_kds/design/time_util.dart';
 import 'kds/kds_root.dart';
 import 'kds/link/kds_link.dart';
 import 'kds/state/kds_board.dart';
+
+/// A borne that is switched off must not look like a crash.
+///
+/// ⚠ Measured on the kitchen Samsung 2026-11-23, with the borne off: the link
+/// logged `hub not reachable yet — will keep retrying` exactly as designed,
+/// and directly underneath it `E/flutter: Unhandled Exception:
+/// WebSocketChannelException: Connection refused`. Every attempt, all night.
+///
+/// The transport observes every future it owns — the stream's `onError`, the
+/// `ready` future and `sink.done` — and this one still escapes, because
+/// `web_socket_channel` adds the failure to its own sink *after* the transport
+/// has closed it, where nothing is left to receive it. It cannot be caught at
+/// the call site; it arrives as an unhandled error on the isolate.
+///
+/// So it is handled here, **narrowly**: this one exception type, which on this
+/// surface means exactly one thing — the borne is not answering yet, which the
+/// offline badge is already saying. Everything else is rethrown to the default
+/// handler untouched, because a board that swallowed its own crashes would be
+/// a board nobody could debug.
+void _swallowUnreachableHubErrors() {
+  final bool Function(Object, StackTrace)? previous =
+      PlatformDispatcher.instance.onError;
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    if (error.runtimeType.toString() == 'WebSocketChannelException') {
+      debugPrint('[KdsLink] hub unreachable (socket closed): $error');
+      return true;
+    }
+    return previous?.call(error, stack) ?? false;
+  };
+}
 
 /// The kitchen board's entrypoint — the third surface in this repo, after the
 /// customer app and the kiosk.
@@ -23,6 +54,7 @@ import 'kds/state/kds_board.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   TimeUtil.init();
+  _swallowUnreachableHubErrors();
 
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.landscapeLeft,
