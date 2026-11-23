@@ -46,6 +46,7 @@ class AudioAlarmSink implements KdsAlarmSink {
 
   static AudioPlayer _default() => AudioPlayer(playerId: 'kds-alarm');
 
+  static const String _counterAsset = 'audio/kds_counter.wav';
   static const String _waitingAsset = 'audio/kds_waiting.wav';
   static const String _noticeAsset = 'audio/kds_notice.wav';
 
@@ -103,16 +104,29 @@ class AudioAlarmSink implements KdsAlarmSink {
     return player;
   }
 
+  /// Which file a register plays.
+  ///
+  /// ⚠ Exposed so a test can assert the three registers map to three
+  /// **different** files that all exist. The owner asked for a different
+  /// *sound*; a switch that compiles while two arms point at the same wav
+  /// satisfies the compiler and nobody else.
+  ///
+  /// Exhaustive on purpose, too: a register added to the enum without a tone
+  /// would otherwise fall into whichever branch was written last, and the
+  /// kitchen would be called to the wrong job.
+  @visibleForTesting
+  static String assetFor(KdsAlarmRegister register) => switch (register) {
+    KdsAlarmRegister.counter => _counterAsset,
+    KdsAlarmRegister.waiting => _waitingAsset,
+    KdsAlarmRegister.notice => _noticeAsset,
+  };
+
   @override
   Future<void> ring(KdsAlarmRegister register) async {
     try {
       final AudioPlayer player = await _configure();
       await player.stop();
-      await player.play(
-        AssetSource(
-          register == KdsAlarmRegister.waiting ? _waitingAsset : _noticeAsset,
-        ),
-      );
+      await player.play(AssetSource(assetFor(register)));
     } on Object catch (error) {
       // A silent alarm is bad; a board that crashes because a speaker is busy
       // is worse. The kitchen still has the screen.

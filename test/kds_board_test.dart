@@ -195,7 +195,7 @@ void main() {
     });
   });
 
-  group('the alarm has two registers, and they do not share a seen-set', () {
+  group('the alarm has three registers, and they do not share a seen-set', () {
     late KdsAlarm alarm;
     final DateTime t0 = DateTime.utc(2026, 8, 16, 12);
 
@@ -204,14 +204,113 @@ void main() {
     Map<String, List<PosOrder>> lanesWith(List<PosOrder> unclaimed) =>
         KdsLane.board(unclaimed, now: t0);
 
-    test('unclaimed work sounds the waiting register', () {
+    /// A ticket that has been **paid** at the counter, so it sits in
+    /// *Nouvelles* rather than *À encaisser*. The two lanes are what the two
+    /// repeating registers watch, so a test about one of them has to be able
+    /// to produce the other.
+    PosOrder cooked() {
+      final PlacedOrder placed = ring();
+      engine.settleCounterCash(placed.order.clientId);
+      return engine.store
+          .openOrders()
+          .firstWhere((PosOrder o) => o.clientId == placed.order.clientId);
+    }
+
+    test('an unpaid ticket sounds the counter register', () {
       final PlacedOrder placed = ring();
       final KdsAlarmCue? cue = alarm.evaluate(
         lanes: lanesWith(<PosOrder>[placed.order]),
         now: t0,
       );
-      expect(cue?.register, KdsAlarmRegister.waiting);
+      expect(
+        cue?.register,
+        KdsAlarmRegister.counter,
+        reason: 'owner 2026-11-23: À encaisser must not sound like Nouvelles',
+      );
       expect(cue?.count, 1);
+    });
+
+    test('a paid ticket waiting to be cooked sounds the waiting register', () {
+      final KdsAlarmCue? cue = alarm.evaluate(
+        lanes: lanesWith(<PosOrder>[cooked()]),
+        now: t0,
+      );
+      expect(cue?.register, KdsAlarmRegister.waiting);
+    });
+
+    test('the counter wins a tie, and the loser is NOT swallowed', () {
+      final PlacedOrder unpaid = ring();
+      final PosOrder paid = cooked();
+      final Map<String, List<PosOrder>> both = lanesWith(<PosOrder>[
+        unpaid.order,
+        paid,
+      ]);
+
+      // ⚠ One speaker. Mixing two alarms yields a noise that is neither, so
+      // they take precedence — the counter first, because a person is standing
+      // there holding cash.
+      expect(
+        alarm.evaluate(lanes: both, now: t0)?.register,
+        KdsAlarmRegister.counter,
+      );
+      // ⚠ The whole point: the register that lost did not have its arrival
+      // recorded, so it sounds on the very next refresh rather than never. A
+      // register a busier lane can starve is one the kitchen learns to
+      // distrust.
+      expect(
+        alarm
+            .evaluate(lanes: both, now: t0.add(const Duration(seconds: 5)))
+            ?.register,
+        KdsAlarmRegister.waiting,
+      );
+    });
+
+    test('each register keeps its own nag clock', () {
+      final PlacedOrder unpaid = ring();
+      final PosOrder paid = cooked();
+      final Map<String, List<PosOrder>> both = lanesWith(<PosOrder>[
+        unpaid.order,
+        paid,
+      ]);
+      alarm.evaluate(lanes: both, now: t0); // counter
+      alarm.evaluate(lanes: both, now: t0.add(const Duration(seconds: 5)));
+
+      // Both have now sounded once. Neither may sound again before its own
+      // interval — a shared clock would let one lane's arrival reset the
+      // other's nag, which is the v1.15 seen-set bug wearing a different hat.
+      expect(
+        alarm.evaluate(lanes: both, now: t0.add(const Duration(seconds: 40))),
+        isNull,
+      );
+      expect(
+        alarm
+            .evaluate(lanes: both, now: t0.add(const Duration(seconds: 65)))
+            ?.register,
+        KdsAlarmRegister.counter,
+      );
+    });
+
+    test('one button silences every register', () {
+      final PlacedOrder unpaid = ring();
+      final PosOrder paid = cooked();
+      final Map<String, List<PosOrder>> both = lanesWith(<PosOrder>[
+        unpaid.order,
+        paid,
+      ]);
+      alarm.evaluate(lanes: both, now: t0);
+      alarm.mute();
+      expect(
+        alarm.evaluate(
+          lanes: both,
+          now: t0.add(const Duration(seconds: 5)),
+        ),
+        isNull,
+        reason:
+            'Couper l\'alarme is one button on a tablet; silencing only the '
+            'register that happened to be playing leaves the kitchen tapping '
+            'at a board that keeps making noise',
+      );
+      expect(alarm.muted, isTrue);
     });
 
     test('it does not re-sound before the nag interval, and does after', () {
@@ -222,7 +321,7 @@ void main() {
 
       expect(
         alarm.evaluate(lanes: lanes, now: t0)?.register,
-        KdsAlarmRegister.waiting,
+        KdsAlarmRegister.counter,
       );
       expect(
         alarm.evaluate(lanes: lanes, now: t0.add(const Duration(seconds: 30))),
@@ -233,7 +332,7 @@ void main() {
         alarm
             .evaluate(lanes: lanes, now: t0.add(KdsSla.reminderEvery))
             ?.register,
-        KdsAlarmRegister.waiting,
+        KdsAlarmRegister.counter,
       );
     });
 
@@ -266,7 +365,7 @@ void main() {
       );
       expect(
         cue?.register,
-        KdsAlarmRegister.waiting,
+        KdsAlarmRegister.counter,
         reason:
             'muting the current nag must not swallow the NEXT order — a '
             'kitchen that can silence itself for the night loses tickets',

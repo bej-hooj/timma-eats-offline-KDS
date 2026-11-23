@@ -226,7 +226,11 @@ void main() {
     expect(arrived.total, 4500);
     expect(
       speaker.rung,
-      contains(KdsAlarmRegister.waiting),
+      // The ticket lands in *À encaisser* — unpaid — so the register is
+      // `counter`, which since ECOSYSTEM v1.25 has its own tone. Asserting
+      // the lane's own register rather than "something rang" is what would
+      // catch the two lanes being merged back into one sound.
+      contains(KdsAlarmRegister.counter),
       reason:
           'THE ALARM. A ticket that lands in silence is a ticket the '
           'kitchen finds when the customer asks for it',

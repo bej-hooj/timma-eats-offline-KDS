@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generates the board's two alarm tones.
+"""Generates the board's three alarm tones.
 
 The sounds are committed as assets, but they are *generated* rather than
-sourced so that "why does it sound like that?" has an answer in the repo. Both
+sourced so that "why does it sound like that?" has an answer in the repo. All three
 are 44.1 kHz 16-bit mono WAV — the one format every Android and iOS decoder
 plays without a codec negotiation, on a tablet that may be offline forever.
 
@@ -14,6 +14,14 @@ because a steady tone disappears into an extractor fan, while an alternating
 pair keeps re-attacking the ear. Odd harmonics are mixed in for the same
 reason a real alarm is not a sine: a pure tone at kitchen volume is felt as
 quieter than a reedy one at the same amplitude.
+
+**counter** is the *À encaisser* register (ECOSYSTEM §22.1, v1.25). It is
+three short rising blips — C6/E6/G6, a major triad — repeated three times.
+**The rhythm carries it, not the pitch**: in a kitchen the ear separates a
+fast triplet from a slow two-tone alternation far more reliably than it
+separates two frequencies, and a cook hears this one from the pass without
+looking up. Loud, because somebody is standing at the counter with cash in
+their hand, but shorter than the siren so it does not outstay the message.
 
 **notice** sounds once, so it is deliberately the opposite: two soft tones
 falling rather than alternating, at a third of the level. A scheduled ticket
@@ -77,6 +85,16 @@ def main():
         waiting += tone(1320, 190, 0.92)
         waiting += silence(35)
     write("assets/audio/kds_waiting.wav", waiting)
+
+    counter = []
+    for _ in range(3):
+        counter += tone(1046, 85, 0.88)
+        counter += silence(45)
+        counter += tone(1318, 85, 0.88)
+        counter += silence(45)
+        counter += tone(1568, 150, 0.88)
+        counter += silence(230)
+    write("assets/audio/kds_counter.wav", counter)
 
     notice = tone(1320, 130, 0.32) + silence(50) + tone(880, 260, 0.32)
     write("assets/audio/kds_notice.wav", notice)
