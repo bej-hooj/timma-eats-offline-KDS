@@ -120,12 +120,14 @@ abstract final class KdsScale {
   /// kitchen board that shows a cook neither what to cook nor which ticket it
   /// is has failed at its only job.
   ///
-  /// 280 is what the card needs for its chips and its action on one line each.
-  /// Four of them want 1 192 dp, which the kitchen's Windows screen and any
-  /// mounted tablet have; the Samsung has 868, so the board scrolls sideways
-  /// there and a cook swipes between lanes. A lane off the edge can be
-  /// reached; one painted over cannot be read.
-  static const double laneWidthFloor = 280;
+  /// ⚠ 240, not 280, and the number comes from a real screen: the GM92 the
+  /// restaurant mounts is **1097 dp** wide in landscape, which leaves 1 049
+  /// for the lanes. Four 280 dp lanes want 1 192 and would have made that
+  /// board scroll; at 240 they want 1 008 and all four are on screen at once.
+  ///
+  /// 240 still leaves the card 208 dp — comfortably past the 148 that made it
+  /// unreadable — and the Windows PC and any television have room to spare.
+  static const double laneWidthFloor = 240;
 
   /// Kept here rather than imported from `KdsLane` so this file stays free of
   /// domain imports; asserted equal to `KdsLane.spine.length` in the tests.
