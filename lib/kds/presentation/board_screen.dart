@@ -564,6 +564,19 @@ class _Lane extends StatelessWidget {
                               order: order,
                               lines: linesOf(order.clientId),
                               now: now,
+                              // ⚠⚠ **The lane's visible height, never more.**
+                              // Owner, 2026-11-24: *"be sure the user can
+                              // always click on all buttons — currently
+                              // Encaisser is not reachable on kitchen"*. A
+                              // card taller than the lane puts its action
+                              // below the fold, and a control a cook cannot
+                              // reach does not exist.
+                              //
+                              // The card is what adapts instead: see the
+                              // `compact` branch in `KdsTicketCard`, which
+                              // puts the ticket code and the dishes FIRST so
+                              // the little room a short screen leaves is
+                              // spent on what a cook actually reads.
                               maxHeight: constraints.maxHeight,
                               onPrimaryAction: actionable
                                   ? () => onAction(order)

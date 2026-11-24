@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
+import 'package:pos_core/testing.dart';
+import 'package:pos_link/pos_link.dart';
 import 'package:timma_kds/design/app_tokens.dart';
 import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/domain/kds_lanes.dart';
@@ -296,8 +298,13 @@ void main() {
     }
 
     Future<void> show(WidgetTester tester) async {
-      tester.view.physicalSize = const Size(2280, 1080);
-      tester.view.devicePixelRatio = 2.625;
+      // ⚠ A board wide enough for all four lanes. These tests are about what
+      // a CARD says, not about how many lanes fit: since the lane floor went
+      // to 280 dp (so a card is readable at all), the Samsung's 868 dp board
+      // scrolls sideways and the *Prêtes* lane is off screen — which would
+      // fail these for a reason that has nothing to do with the card.
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
         ProviderScope(
@@ -418,14 +425,184 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'overflow at $name');
       // And it is still a board: the ticket is on it.
       expect(find.byType(KdsTicketCard), findsWidgets, reason: name);
+
+      // ⚠⚠ And the ticket is READABLE, which "no overflow" never said.
+      // Measured on the real pair 2026-11-24: at a 183 dp lane the card drew
+      // its chips and its action button and nothing else — no code, no dish,
+      // no total — and every test here passed. A board that shows a cook
+      // neither what to cook nor which ticket it is has failed at its only
+      // job, so the dish itself is the assertion.
+      expect(
+        find.textContaining('Jus'),
+        findsWidgets,
+        reason: 'the ticket showed no dish at $name',
+      );
     });
   }
+
+  /// Owner, 2026-11-24: *"i hope the responsiveness of the kitchen won't
+  /// necessitate a scroll on larger screen to show all columns"*, and *"i hope
+  /// it is 100% responsive even on tv width screens"*.
+  for (final (String name, Size size, double ratio) in <(String, Size, double)>[
+    ('Windows PC 1280x800', Size(1280, 800), 1.0),
+    ('television 1080p', Size(1920, 1080), 1.0),
+    ('television 4K', Size(3840, 2160), 1.0),
+  ]) {
+    testWidgets('all four lanes are on screen at once — $name', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+          ],
+          child: const KdsApp(),
+        ),
+      );
+      await tester.pump();
+
+      // ⚠ Not "the widget exists" — the August pairing bug passed that while
+      // the control was off screen. Every lane's heading has to be INSIDE the
+      // viewport, with nothing to swipe.
+      final double width = size.width / ratio;
+      for (final String lane in <String>[
+        'À encaisser',
+        'Nouvelles',
+        'En préparation',
+        'Prêtes',
+      ]) {
+        final Finder title = find.text(lane);
+        expect(title, findsWidgets, reason: '$lane missing at $name');
+        final Rect rect = tester.getRect(title.first);
+        expect(
+          rect.right,
+          lessThanOrEqualTo(width + 0.5),
+          reason: '$lane ran ${rect.right - width} dp off the right at $name',
+        );
+        expect(rect.left, greaterThanOrEqualTo(-0.5), reason: '$lane at $name');
+      }
+    });
+  }
+
+  testWidgets('a ticket that ARRIVED FROM THE BORNE shows its dishes', (
+    tester,
+  ) async {
+    // ⚠⚠ The real path, which every other test here skips: the orders on a
+    // kitchen board are not placed on it, they are MERGED into it from a
+    // board frame the borne publishes. Measured on the real pair 2026-11-24
+    // with production builds: the card showed its chips and its action button
+    // and nothing between them — no code, no dish, no total.
+    tester.view.physicalSize = const Size(2280, 1080);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+
+    // The BORNE's own store and engine, as the hub has them.
+    final PosStore borneStore = SqlitePosStore.inMemory();
+    addTearDown(borneStore.close);
+    const PosDeviceIdentity borneIdentity = PosDeviceIdentity(
+      deviceId: 'borne-gm92',
+      branchId: 'branch-1',
+      role: PosDeviceRole.kiosk,
+      label: 'Borne',
+    );
+    borneStore.writeIdentity(borneIdentity);
+    final MenuSnapshot m = menu();
+    borneStore.stageSnapshot(m, DateTime.utc(2026, 11, 24));
+    borneStore.activateSnapshot(m.version, DateTime.utc(2026, 11, 24));
+    final PosEngine borne = PosEngine(
+      store: borneStore,
+      identity: borneIdentity,
+    );
+    borne.placeKioskOrder(
+      lines: const <PosCartLine>[PosCartLine(productId: 'p-jus', quantity: 2)],
+    );
+
+    // …published as a board frame, through the wire, and merged on the KDS.
+    final BoardSnapshot frame = BoardSnapshot.fromWire(
+      BoardSnapshot.fromStore(store: borneStore, clock: ManualClock()).toWire(),
+    );
+    frame.applyTo(engine);
+
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(1.1)),
+        child: ProviderScope(
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+          ],
+          child: const KdsApp(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.textContaining('Jus'),
+      findsWidgets,
+      reason:
+          'a ticket from the borne showed no dish — a cook cannot cook a '
+          'total',
+    );
+  });
+
+  testWidgets('a cook can READ the ticket on the kitchen Samsung', (
+    tester,
+  ) async {
+    // ⚠⚠ Measured on the real pair 2026-11-24, production builds, a live
+    // order from the borne: the card rendered its chips and its action button
+    // and NOTHING ELSE. No ticket code, no dish, "Borne" wrapped to "Born/e"
+    // and "Encaisser en espèce" to three lines. A kitchen board that shows a
+    // cook neither what to cook nor which ticket it is has failed at its only
+    // job, and "no overflow" passed throughout.
+    tester.view.physicalSize = const Size(2280, 1080);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+
+    engine.placeKioskOrder(
+      lines: const <PosCartLine>[PosCartLine(productId: 'p-jus', quantity: 2)],
+    );
+
+    await tester.pumpWidget(
+      MediaQuery(
+        // The kitchen Samsung's own setting.
+        data: const MediaQueryData(textScaler: TextScaler.linear(1.1)),
+        child: ProviderScope(
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+          ],
+          child: const KdsApp(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // The dish. This is what a cook cooks from.
+    expect(
+      find.textContaining('Jus'),
+      findsWidgets,
+      reason: 'the ticket showed no dish at all',
+    );
+    // And the handle they call it out by.
+    expect(
+      find.textContaining('Ticket'),
+      findsWidgets,
+      reason: 'the ticket showed no code',
+    );
+  });
 
   testWidgets('the lanes are the take-away spine, not six fixed columns', (
     tester,
   ) async {
-    tester.view.physicalSize = const Size(2532, 1170);
-    tester.view.devicePixelRatio = 3;
+    // Wide enough that all four are on screen at once — this is about WHICH
+    // lanes the board has, not how many fit. On a narrower board they are all
+    // still there, behind a sideways scroll (see the responsive sweep).
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
     engine.placeKioskOrder(
@@ -834,15 +1011,29 @@ void _theActionIsAlwaysOnScreen() {
     );
     expect(action, findsWidgets, reason: 'the ticket must offer an action');
 
+    // ⚠⚠ **On screen WITHOUT scrolling.** Owner, 2026-11-24, on the real
+    // board: *"be sure the user can always click on all buttons — currently
+    // Encaisser is not reachable on kitchen"*. For one turn this test allowed
+    // the cook to scroll to it; that was the wrong trade, and this is the
+    // assertion that holds the right one. The card adapts instead — on a
+    // short board it leads with the ticket code and the dishes and shrinks
+    // its own chrome, so the action never leaves the viewport.
     final Size screen = tester.view.physicalSize / tester.view.devicePixelRatio;
     final Rect rect = tester.getRect(action.first);
     expect(
       rect.bottom,
-      lessThanOrEqualTo(screen.height),
+      lessThanOrEqualTo(screen.height + 0.5),
       reason:
           'the action ran ${rect.bottom - screen.height} dp past the '
-          'bottom of a ${screen.height} dp screen — a cook cannot press it',
+          'bottom of a ${screen.height} dp screen even after scrolling to it '
+          '— a cook cannot press it',
     );
-    expect(rect.top, greaterThanOrEqualTo(0));
+    expect(rect.top, greaterThanOrEqualTo(-0.5));
+
+    // And it really is pressable: a rect inside the viewport that nothing can
+    // hit is the same defect wearing a different hat.
+    await tester.tap(action.first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }

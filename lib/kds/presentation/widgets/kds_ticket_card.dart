@@ -71,6 +71,15 @@ class KdsTicketCard extends StatelessWidget {
     final bool paid = order.paymentStatus == PosPaymentStatus.paid;
     final bool french = Localizations.localeOf(context).languageCode == 'fr';
 
+    // ⚠ **A card on a short screen is a different card.** The kitchen Samsung
+    // is 411 dp tall in landscape, which leaves a lane about 153 dp — and the
+    // full-size card spends 72 of those on its button alone. Rather than drop
+    // what a cook needs (which is what the old height cap did), the card
+    // tightens: smaller padding, a smaller action, and a total that scales to
+    // one line instead of wrapping into "5 100 FCF / A".
+    final bool compact = (maxHeight ?? double.infinity) < 320;
+    final double pad = compact ? KdsScale.gap : KdsScale.gapMd;
+
     return Card(
       margin: const EdgeInsets.only(bottom: KdsScale.gapMd),
       shape: RoundedRectangleBorder(
@@ -82,7 +91,7 @@ class KdsTicketCard extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight ?? double.infinity),
         child: Padding(
-          padding: const EdgeInsets.all(KdsScale.gapMd),
+          padding: EdgeInsets.all(pad),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,6 +103,31 @@ class KdsTicketCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
+                      // ⚠ On a short board the chips go BELOW. A 411 dp
+                      // screen leaves this scroll area about 70 dp, and what
+                      // belongs in it is the ticket code and the dish — not
+                      // "Borne" and "Non payé", which a cook can scroll to.
+                      if (compact) ...<Widget>[
+                        if (identity != null)
+                          Text(
+                            l10n.kdsTicket(identity),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontSize: KdsScale.bodySize,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        for (final PosOrderLine line in lines)
+                          _Line(line: line, french: french, l10n: l10n),
+                        if (lines.isEmpty)
+                          Text(
+                            l10n.kdsLinesPending,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: AppColors.textMuted,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        const SizedBox(height: KdsScale.gap),
+                      ],
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
@@ -169,16 +203,16 @@ class KdsTicketCard extends StatelessWidget {
                       // call out. `daily_code` is the kitchen's own code,
                       // minted by the server for exactly this (ECOSYSTEM
                       // §6.4), and `order_code` is the last resort.
-                      if (identity != null)
+                      if (identity != null && !compact)
                         Text(
                           l10n.kdsTicket(identity),
                           style: theme.textTheme.titleLarge,
                         ),
-                      if (lines.isNotEmpty) ...<Widget>[
+                      if (lines.isNotEmpty && !compact) ...<Widget>[
                         const SizedBox(height: KdsScale.gapMd),
                         for (final PosOrderLine line in lines)
                           _Line(line: line, french: french, l10n: l10n),
-                      ] else ...<Widget>[
+                      ] else if (lines.isEmpty && !compact) ...<Widget>[
                         // ⚠ A card with no dishes on it looks like a bug, and
                         // a cook cannot tell "nothing ordered" from "the
                         // detail has not arrived". Say which.
@@ -214,13 +248,26 @@ class KdsTicketCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                      const SizedBox(height: KdsScale.gap),
-                      Text(
-                        MoneyFormatter.formatXaf(order.total),
-                        style: const TextStyle(
-                          fontSize: KdsScale.totalSize,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.onSurface,
+                      SizedBox(height: compact ? 2 : KdsScale.gap),
+                      // ⚠ One line, always. Seen on the Samsung: the total
+                      // wrapped to "5 100 FCF / A" and the second line was
+                      // clipped by the card. `scaleDown` only ever shrinks.
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            MoneyFormatter.formatXaf(order.total),
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: compact
+                                  ? KdsScale.bodySize
+                                  : KdsScale.totalSize,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -231,10 +278,22 @@ class KdsTicketCard extends StatelessWidget {
                 const SizedBox(height: KdsScale.gapMd),
                 SizedBox(
                   width: double.infinity,
-                  height: KdsScale.minTarget,
+                  // ⚠ 72 dp is the gloved-hand rule and it stands on any
+                  // normal board. On a 411 dp screen it is half the lane, so
+                  // a short board gets 56 — still well past the 48 dp floor
+                  // every platform asks for, and the alternative was a card
+                  // with no room to say what to cook.
+                  height: compact ? 56 : KdsScale.minTarget,
                   child: FilledButton(
                     onPressed: onPrimaryAction,
-                    child: Text(_actionLabel(l10n, order)),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _actionLabel(l10n, order),
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ),
                 ),
               ],

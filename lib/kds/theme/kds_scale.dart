@@ -35,6 +35,23 @@ abstract final class KdsScale {
   /// 16 looks like a bubble at 56 dp; half of it reads as the same family.
   static const double radiusSmall = 8;
 
+  /// The least height a ticket card may be given, whatever the lane's own
+  /// height is.
+  ///
+  /// ⚠⚠ **Measured on the kitchen Samsung, 2026-11-24, with a live order:
+  /// the card was capped at 153 dp.** The cap was the lane's VISIBLE height —
+  /// "no card taller than the space a cook can see" — and in landscape that
+  /// phone is 411 dp tall, so after the board header and the lane header there
+  /// were 153 left. The chips and the 72 dp action button fill that on their
+  /// own, so the card rendered them and silently dropped the ticket code, the
+  /// dishes and the total. The data was all there: `lines=1`, `total=5100`,
+  /// `label=01`.
+  ///
+  /// A card that does not fit must be SCROLLED TO, not emptied. The lane is a
+  /// list and already scrolls; a half-visible card a cook can pull up beats a
+  /// whole one that says nothing.
+  static const double cardMinHeight = 280;
+
   /// A dish thumbnail on a ticket line.
   ///
   /// 52, not 72: this is a RECOGNITION aid for a cook who is already holding
@@ -93,8 +110,22 @@ abstract final class KdsScale {
   }
 
   /// The narrowest a lane may be drawn before the board scrolls instead.
-  /// Below this a ticket card cannot lay out its own header.
-  static const double laneWidthFloor = 160;
+  ///
+  /// ⚠⚠ **Measured on the real pair, 2026-11-24, with a live order.** At 160
+  /// the Samsung's four lanes are 183 dp and the card inside is 148 — and at
+  /// 148 the card is not merely tight, it is UNREADABLE: the *Borne* chip
+  /// wrapped to "Born/e", *Encaisser en espèce* wrapped to three lines and was
+  /// clipped, the paid chip never appeared, and the ticket code, the dishes
+  /// and the total were pushed out of the card's scroll area entirely. A
+  /// kitchen board that shows a cook neither what to cook nor which ticket it
+  /// is has failed at its only job.
+  ///
+  /// 280 is what the card needs for its chips and its action on one line each.
+  /// Four of them want 1 192 dp, which the kitchen's Windows screen and any
+  /// mounted tablet have; the Samsung has 868, so the board scrolls sideways
+  /// there and a cook swipes between lanes. A lane off the edge can be
+  /// reached; one painted over cannot be read.
+  static const double laneWidthFloor = 280;
 
   /// Kept here rather than imported from `KdsLane` so this file stays free of
   /// domain imports; asserted equal to `KdsLane.spine.length` in the tests.
