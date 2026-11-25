@@ -115,11 +115,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kdsAlarmMuted => 'Alarm muted';
 
   @override
-  String kdsExpired(int count) {
-    return '$count unpaid ticket(s) expired';
-  }
-
-  @override
   String get kdsPairTitle => 'Pair this kitchen';
 
   @override
@@ -214,4 +209,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kdsPairErrorRefused => 'The kiosk refused this kitchen.';
+
+  @override
+  String get kdsDeleteTooltip => 'Delete ticket';
+
+  @override
+  String kdsDeleteTitle(String ticket) {
+    return 'Delete ticket $ticket?';
+  }
+
+  @override
+  String get kdsDeleteBody =>
+      'The order will be cancelled. The customer has not paid.';
+
+  @override
+  String get kdsDeleteCancel => 'Keep';
+
+  @override
+  String get kdsDeleteConfirm => 'Delete';
 }

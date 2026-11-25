@@ -7,7 +7,6 @@ import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/domain/kds_alarm.dart';
 import 'package:timma_kds/kds/domain/kds_lanes.dart';
 import 'package:timma_kds/kds/kds_app.dart';
-import 'package:timma_kds/kds/presentation/board_screen.dart';
 import 'package:timma_kds/kds/presentation/widgets/kds_ticket_card.dart';
 import 'package:timma_kds/kds/state/kds_board.dart';
 
@@ -145,21 +144,8 @@ void main() {
     });
   });
 
-  group('the 15-minute sweep', () {
-    test('nothing stale means nothing reported', () {
-      ring();
-      ring();
-      final ProviderContainer c = container();
-      c.read(kdsBoardProvider.notifier).expireStaleUnpaid();
-      expect(c.read(kdsBoardProvider).expiredJustNow, 0);
-      expect(c.read(kdsBoardProvider).lane(KdsLane.counter), hasLength(2));
-    });
-
-    test('the summary count SURVIVES the 5-second refresh', () {
-      // The board re-reads every 5 s. A count that lived only in the state
-      // object flashed up and was wiped before a cook plating an order could
-      // look at the screen — the line exists precisely so tickets cannot
-      // vanish from the counter lane unnoticed.
+  group('À encaisser tickets stay until a person acts (S10)', () {
+    test('an unpaid ticket survives hours of refreshes', () {
       final ManualClock clock = ManualClock(DateTime.utc(2026, 8, 16, 12));
       final PosEngine timed = PosEngine(
         store: store,
@@ -171,27 +157,51 @@ void main() {
           PosCartLine(productId: 'p-poulet', quantity: 1),
         ],
       );
-      clock.advance(const Duration(minutes: 16));
-
+      clock.advance(const Duration(hours: 3));
       final ProviderContainer c = container(withEngine: timed);
+      c.read(kdsBoardProvider.notifier).refresh();
+      expect(c.read(kdsBoardProvider).lane(KdsLane.counter), hasLength(1));
+    });
+
+    test('the cashier deletes one unpaid ticket — cancelled and queued', () {
+      final PlacedOrder gone = ring();
+      final PlacedOrder kept = ring();
+      final ProviderContainer c = container();
+
+      c.read(kdsBoardProvider.notifier).cancelUnpaid(gone.order.clientId);
+
+      expect(
+        store.findOrder(gone.order.clientId)!.status,
+        PosOrderStatus.cancelled,
+      );
+      expect(
+        c
+            .read(kdsBoardProvider)
+            .lane(KdsLane.counter)
+            .map((PosOrder o) => o.clientId),
+        <String>[kept.order.clientId],
+      );
+      final OutboxEnvelope sent = store
+          .envelopesForSubject(gone.order.clientId)
+          .last;
+      expect(sent.kind, EnvelopeKind.transition);
+      expect(sent.destination, EnvelopeDestination.hub);
+      expect(sent.payload['to'], PosOrderStatus.cancelled);
+    });
+
+    test('a paid ticket cannot be deleted from the till', () {
+      final PlacedOrder paid = ring();
+      final ProviderContainer c = container();
       final KdsBoardController board = c.read(kdsBoardProvider.notifier);
+      board.settleCash(paid.order.clientId);
 
-      board.expireStaleUnpaid();
-      expect(c.read(kdsBoardProvider).expiredJustNow, 1);
+      board.cancelUnpaid(paid.order.clientId);
 
-      board.refresh();
       expect(
-        c.read(kdsBoardProvider).expiredJustNow,
-        1,
-        reason: 'a refresh must not wipe the line before anyone read it',
+        store.findOrder(paid.order.clientId)!.status,
+        PosOrderStatus.placed,
       );
-
-      board.acknowledgeExpired();
-      expect(
-        c.read(kdsBoardProvider).expiredJustNow,
-        0,
-        reason: 'it is dismissed by a person, never by a timer',
-      );
+      expect(c.read(kdsBoardProvider).lastError, isNotNull);
     });
   });
 
@@ -425,6 +435,73 @@ void main() {
       expect(find.byType(KdsTicketCard), findsOneWidget);
       expect(placed.order.ticketNumber, isNotNull);
     });
+
+    testWidgets('the till deletes an unpaid ticket only after confirming', (
+      tester,
+    ) async {
+      final PlacedOrder placed = ring();
+      tester.view.physicalSize = const Size(2400, 1600);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(speaker),
+          ],
+          child: const KdsApp(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('kds-delete-ticket')), findsOneWidget);
+
+      // Keep: nothing happens.
+      await tester.tap(find.byKey(const Key('kds-delete-ticket')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('kds-delete-dialog')), findsOneWidget);
+      expect(find.textContaining('La commande sera annulée'), findsOneWidget);
+      await tester.tap(find.text('Garder'));
+      await tester.pumpAndSettle();
+      expect(
+        store.findOrder(placed.order.clientId)!.status,
+        PosOrderStatus.pendingPayment,
+      );
+
+      // Supprimer: cancelled and off the board.
+      await tester.tap(find.byKey(const Key('kds-delete-ticket')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('kds-delete-confirm')));
+      await tester.pumpAndSettle();
+      expect(
+        store.findOrder(placed.order.clientId)!.status,
+        PosOrderStatus.cancelled,
+      );
+      expect(find.byType(KdsTicketCard), findsNothing);
+    });
+
+    testWidgets('a paid ticket carries no trash icon', (tester) async {
+      final PlacedOrder placed = ring();
+      engine.settleCounterCash(placed.order.clientId);
+      tester.view.physicalSize = const Size(2400, 1600);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            kdsEngineProvider.overrideWithValue(engine),
+            kdsAlarmSinkProvider.overrideWithValue(speaker),
+          ],
+          child: const KdsApp(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(KdsTicketCard), findsOneWidget);
+      expect(find.byKey(const Key('kds-delete-ticket')), findsNothing);
+    });
   });
 }
 
@@ -483,9 +560,7 @@ void _headerFitsTests() {
 
     tearDown(() => store.close());
 
-    testWidgets('the expiry line and the alarm coexist, in French', (
-      tester,
-    ) async {
+    testWidgets('the alarm fits the header, in French', (tester) async {
       // The iPhone the cuisine runs on, landscape: 844 x 390 dp.
       tester.view.physicalSize = const Size(2532, 1170);
       tester.view.devicePixelRatio = 3;
@@ -509,20 +584,13 @@ void _headerFitsTests() {
       );
       await tester.pump();
 
-      // …and the sweep's summary line beside it is what tipped it over.
-      final ProviderContainer container = ProviderScope.containerOf(
-        tester.element(find.byType(KdsBoardScreen)),
-      );
-      container.read(kdsBoardProvider.notifier).expireStaleUnpaid();
-      await tester.pump();
-
       expect(find.text('Couper l\'alarme'), findsOneWidget);
       expect(
         tester.takeException(),
         isNull,
         reason:
-            'the header overflowed with the expiry line and the alarm '
-            'both on screen — the stripe went through the mute button',
+            'the header overflowed with the alarm on screen — the stripe '
+            'went through the mute button',
       );
     });
   });

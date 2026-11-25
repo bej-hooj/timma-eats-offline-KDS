@@ -1,6 +1,13 @@
 {
   "kdsItems": "{count, plural, =0{aucun article} =1{1 article} other{{count} articles}}",
-  "@kdsItems": {"description": "Collapsed ticket summary: how many dishes are on it.", "placeholders": {"count": {"type": "int"}}},
+  "@kdsItems": {
+    "description": "Collapsed ticket summary: how many dishes are on it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "kdsBoardTitle": "Cuisine",
   "kdsLaneCounter": "À encaisser",
   "kdsLaneScheduled": "Programmées",
@@ -11,7 +18,11 @@
   "kdsWaitingLong": "+{hours} h",
   "@kdsWaitingLong": {
     "description": "A ticket older than a few hours: hours, not an unreadable minute count.",
-    "placeholders": { "hours": { "type": "int" } }
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
   },
   "kdsLinesPending": "Détail non reçu",
   "@kdsLinesPending": {
@@ -52,14 +63,6 @@
   "kdsOffline": "Hors ligne",
   "kdsMuteAlarm": "Couper l'alarme",
   "kdsAlarmMuted": "Alarme coupée",
-  "kdsExpired": "{count} ticket(s) non payé(s) expiré(s)",
-  "@kdsExpired": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "kdsPairTitle": "Apparier cette cuisine",
   "kdsPairSubtitle": "Choisissez la borne sur le wifi du restaurant, puis validez sur son écran.",
   "kdsPairSearch": "Chercher la borne",
@@ -108,5 +111,17 @@
   "kdsPairWaiting": "Validez sur la borne",
   "kdsPairCompare": "Ce nombre doit être le même sur l'écran de la borne.",
   "kdsPairOrCode": "Ou saisissez le code affiché sur la borne",
-  "kdsPairErrorRefused": "La borne a refusé cette cuisine."
+  "kdsPairErrorRefused": "La borne a refusé cette cuisine.",
+  "kdsDeleteTooltip": "Supprimer le ticket",
+  "kdsDeleteTitle": "Supprimer le ticket {ticket} ?",
+  "kdsDeleteBody": "La commande sera annulée. Le client n'a pas payé.",
+  "kdsDeleteCancel": "Garder",
+  "kdsDeleteConfirm": "Supprimer",
+  "@kdsDeleteTitle": {
+    "placeholders": {
+      "ticket": {
+        "type": "String"
+      }
+    }
+  }
 }

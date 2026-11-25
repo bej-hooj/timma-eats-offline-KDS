@@ -132,6 +132,15 @@ class KdsBoardScreen extends ConsumerWidget {
                                   order.status == PosOrderStatus.pendingPayment
                                   ? controller.settleCash(order.clientId)
                                   : controller.advance(order),
+                              // Only the till removes tickets, and only the
+                              // unpaid ones it holds (S10).
+                              onDelete: lane == KdsLane.counter
+                                  ? (PosOrder order) => _confirmDelete(
+                                      context,
+                                      order,
+                                      controller,
+                                    )
+                                  : null,
                             ),
                         ],
                       );
@@ -306,24 +315,6 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: KdsScale.gapLg),
-        // One summary line, never one alert per ticket: a board that shouts
-        // eleven times while a cook is plating is a board the cook stops
-        // hearing (§22.1).
-        // ⚠ **Flexible, not a bare `Text`.** This row holds the logo, the
-        // title, this line, the offline badge and *Couper l'alarme*, and on the
-        // 844 dp board it ran 44 px over the moment the expiry line and the
-        // alarm were on screen together — seen on the simulator, with the
-        // stripe drawn straight through the mute button. The sentence gives
-        // way; the control never does.
-        if (board.expiredJustNow > 0)
-          Flexible(
-            child: Text(
-              l10n.kdsExpired(board.expiredJustNow),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge,
-            ),
-          ),
         const Spacer(),
         // ⚠ **The badge is not decoration.** A board that has silently lost the
         // kiosk looks exactly like a board with no orders — same empty lanes,
@@ -425,6 +416,44 @@ class _Header extends StatelessWidget {
 /// reserved height computed from a different number is a clipped heading.
 const double _laneTitleLineHeight = 1.1;
 
+/// *Supprimer le ticket ?* — a removed ticket is a cancelled order, so the
+/// cashier is asked once, with the consequence spelled out (S10).
+Future<void> _confirmDelete(
+  BuildContext context,
+  PosOrder order,
+  KdsBoardController controller,
+) async {
+  final AppLocalizations l10n = AppLocalizations.of(context)!;
+  final String label =
+      order.ticketLabelOrNull ?? order.dailyCode ?? order.orderCode ?? '';
+  final bool? confirmed = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) => AlertDialog(
+      key: const Key('kds-delete-dialog'),
+      title: Text(l10n.kdsDeleteTitle(label)),
+      content: Text(l10n.kdsDeleteBody),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: Text(l10n.kdsDeleteCancel),
+        ),
+        FilledButton(
+          key: const Key('kds-delete-confirm'),
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(dialogContext).colorScheme.error,
+            foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+          ),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: Text(l10n.kdsDeleteConfirm),
+        ),
+      ],
+    ),
+  );
+  if (confirmed ?? false) {
+    controller.cancelUnpaid(order.clientId);
+  }
+}
+
 class _Lane extends StatefulWidget {
   const _Lane({
     required this.width,
@@ -436,6 +465,7 @@ class _Lane extends StatefulWidget {
     required this.now,
     required this.emptyLabel,
     required this.onAction,
+    this.onDelete,
   });
 
   final double width;
@@ -449,6 +479,9 @@ class _Lane extends StatefulWidget {
   final DateTime now;
   final String emptyLabel;
   final void Function(PosOrder order) onAction;
+
+  /// The trash icon on each card; null in every lane but *À encaisser*.
+  final void Function(PosOrder order)? onDelete;
 
   @override
   State<_Lane> createState() => _LaneState();
@@ -644,6 +677,11 @@ class _LaneState extends State<_Lane> {
                                 maxHeight: constraints.maxHeight,
                                 onPrimaryAction: actionable
                                     ? () => widget.onAction(order)
+                                    : null,
+                                onDelete:
+                                    widget.onDelete != null &&
+                                        order.awaitsCounterPayment
+                                    ? () => widget.onDelete!(order)
                                     : null,
                               );
                             },

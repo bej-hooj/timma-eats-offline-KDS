@@ -21,6 +21,7 @@ class KdsTicketCard extends StatefulWidget {
     required this.lines,
     required this.now,
     required this.onPrimaryAction,
+    this.onDelete,
     this.maxHeight,
     this.startExpanded = true,
     this.laneWidth = 0,
@@ -41,6 +42,9 @@ class KdsTicketCard extends StatefulWidget {
   /// Settle for an unpaid counter ticket, advance for anything else. Null when
   /// the ticket offers neither.
   final VoidCallback? onPrimaryAction;
+
+  /// The cashier's trash icon beside *Encaisser* (S10). Null everywhere else.
+  final VoidCallback? onDelete;
 
   /// The tallest this card may be — the lane's own height.
   ///
@@ -390,25 +394,43 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
               ),
               if (onPrimaryAction != null) ...<Widget>[
                 const SizedBox(height: KdsScale.gapMd),
-                SizedBox(
-                  width: double.infinity,
-                  // ⚠ 72 dp is the gloved-hand rule and it stands on any
-                  // normal board. On a 411 dp screen it is half the lane, so
-                  // a short board gets 56 — still well past the 48 dp floor
-                  // every platform asks for, and the alternative was a card
-                  // with no room to say what to cook.
-                  height: compact ? 56 : KdsScale.minTarget,
-                  child: FilledButton(
-                    onPressed: onPrimaryAction,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        _actionLabel(l10n, order),
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: SizedBox(
+                        // ⚠ 72 dp is the gloved-hand rule and it stands on any
+                        // normal board. On a 411 dp screen it is half the lane, so
+                        // a short board gets 56 — still well past the 48 dp floor
+                        // every platform asks for, and the alternative was a card
+                        // with no room to say what to cook.
+                        height: compact ? 56 : KdsScale.minTarget,
+                        child: FilledButton(
+                          onPressed: onPrimaryAction,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _actionLabel(l10n, order),
+                              maxLines: 2,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    if (widget.onDelete != null) ...<Widget>[
+                      const SizedBox(width: KdsScale.gap),
+                      SizedBox.square(
+                        dimension: compact ? 56 : KdsScale.minTarget,
+                        child: IconButton.outlined(
+                          key: const Key('kds-delete-ticket'),
+                          tooltip: l10n.kdsDeleteTooltip,
+                          onPressed: widget.onDelete,
+                          color: theme.colorScheme.error,
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ],

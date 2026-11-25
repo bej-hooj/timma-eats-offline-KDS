@@ -278,12 +278,6 @@ abstract class AppLocalizations {
   /// **'Alarme coupée'**
   String get kdsAlarmMuted;
 
-  /// No description provided for @kdsExpired.
-  ///
-  /// In fr, this message translates to:
-  /// **'{count} ticket(s) non payé(s) expiré(s)'**
-  String kdsExpired(int count);
-
   /// No description provided for @kdsPairTitle.
   ///
   /// In fr, this message translates to:
@@ -451,6 +445,36 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'La borne a refusé cette cuisine.'**
   String get kdsPairErrorRefused;
+
+  /// No description provided for @kdsDeleteTooltip.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le ticket'**
+  String get kdsDeleteTooltip;
+
+  /// No description provided for @kdsDeleteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le ticket {ticket} ?'**
+  String kdsDeleteTitle(String ticket);
+
+  /// No description provided for @kdsDeleteBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'La commande sera annulée. Le client n\'a pas payé.'**
+  String get kdsDeleteBody;
+
+  /// No description provided for @kdsDeleteCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Garder'**
+  String get kdsDeleteCancel;
+
+  /// No description provided for @kdsDeleteConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get kdsDeleteConfirm;
 }
 
 class _AppLocalizationsDelegate

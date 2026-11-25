@@ -1,6 +1,13 @@
 {
   "kdsItems": "{count, plural, =0{no items} =1{1 item} other{{count} items}}",
-  "@kdsItems": {"description": "Collapsed ticket summary: how many dishes are on it.", "placeholders": {"count": {"type": "int"}}},
+  "@kdsItems": {
+    "description": "Collapsed ticket summary: how many dishes are on it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "kdsBoardTitle": "Kitchen",
   "kdsLaneCounter": "To collect",
   "kdsLaneScheduled": "Scheduled",
@@ -11,7 +18,11 @@
   "kdsWaitingLong": "+{hours} h",
   "@kdsWaitingLong": {
     "description": "A ticket older than a few hours: hours, not an unreadable minute count.",
-    "placeholders": { "hours": { "type": "int" } }
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
   },
   "kdsLinesPending": "Details not received",
   "@kdsLinesPending": {
@@ -52,14 +63,6 @@
   "kdsOffline": "Offline",
   "kdsMuteAlarm": "Mute alarm",
   "kdsAlarmMuted": "Alarm muted",
-  "kdsExpired": "{count} unpaid ticket(s) expired",
-  "@kdsExpired": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "kdsPairTitle": "Pair this kitchen",
   "kdsPairSubtitle": "Pick the kiosk on the restaurant wifi, then approve on its screen.",
   "kdsPairSearch": "Find the kiosk",
@@ -108,5 +111,10 @@
   "kdsPairWaiting": "Approve on the kiosk",
   "kdsPairCompare": "This number must match the one on the kiosk screen.",
   "kdsPairOrCode": "Or type the code shown on the kiosk",
-  "kdsPairErrorRefused": "The kiosk refused this kitchen."
+  "kdsPairErrorRefused": "The kiosk refused this kitchen.",
+  "kdsDeleteTooltip": "Delete ticket",
+  "kdsDeleteTitle": "Delete ticket {ticket}?",
+  "kdsDeleteBody": "The order will be cancelled. The customer has not paid.",
+  "kdsDeleteCancel": "Keep",
+  "kdsDeleteConfirm": "Delete"
 }

@@ -18,7 +18,6 @@ class KdsBoardState {
     required this.now,
     this.lines = const <String, List<PosOrderLine>>{},
     this.lastError,
-    this.expiredJustNow = 0,
     this.alarmMuted = false,
   });
 
@@ -43,10 +42,6 @@ class KdsBoardState {
   /// A refusal the cook needs to see — a transition the guard rejected, for
   /// instance. Never a stack trace.
   final String? lastError;
-
-  /// How many unpaid tickets the last sweep expired, for the one summary line
-  /// §23 asks for instead of a burst of alerts.
-  final int expiredJustNow;
 
   List<PosOrder> lane(String name) => lanes[name] ?? const <PosOrder>[];
 
@@ -75,19 +70,11 @@ class KdsBoardController extends Notifier<KdsBoardState> {
   /// mute for the rest of the shift.
   final KdsAlarm _alarm = KdsAlarm();
 
-  /// Survives a refresh. Held on the controller rather than recomputed per
-  /// read, because the board re-reads every 5 s: a count that lived only in the
-  /// state object would flash the expiry line up and wipe it before a cook
-  /// plating an order ever looked at the screen. It clears when someone
-  /// acknowledges it, or when the next sweep replaces it.
-  int _expiredJustNow = 0;
-
   /// The board re-reads on this cadence. It is a **local SQLite read**, not the
   /// web board's 5-second HTTP poll, so it costs nothing and mainly exists to
   /// re-age the cards — a card that only re-colours when someone taps is a
   /// card that lies about how long the kitchen has had it.
   static const Duration refreshEvery = Duration(seconds: 5);
-
 
   @override
   KdsBoardState build() {
@@ -133,7 +120,6 @@ class KdsBoardController extends Notifier<KdsBoardState> {
             order.clientId: _engine.store.linesOf(order.clientId),
       },
       lastError: error,
-      expiredJustNow: _expiredJustNow,
       alarmMuted: _alarm.muted,
     );
   }
@@ -184,23 +170,17 @@ class KdsBoardController extends Notifier<KdsBoardState> {
     }
   }
 
-  /// The local 15-minute sweep. Reported as **one summary count**, not one
-  /// alert per ticket: a board that shouts eleven times while a cook is plating
-  /// is a board the cook learns to ignore (§22.1).
-  void expireStaleUnpaid() {
-    final List<PosOrder> expired = _engine.expireStaleUnpaid();
-    if (expired.isNotEmpty) {
-      _expiredJustNow = expired.length;
+  /// The cashier removes an unpaid ticket — no payment, the customer left
+  /// (owner, 2026-11-25, S10). The confirmation is the screen's job; this is
+  /// the act. Goes to the hub, then the cloud, as a cancel with a reason.
+  void cancelUnpaid(String clientId) {
+    try {
+      _engine.cancelUnpaid(clientId);
+      state = _read();
+      _publish();
+    } on PosError catch (error) {
+      state = _read(error: error.code);
     }
-    state = _read();
-  }
-
-  /// Clears the expiry line. It is dismissed by a **person**, never by a timer:
-  /// tickets vanishing from the counter lane is the one board event a cook must
-  /// not be able to miss by looking away.
-  void acknowledgeExpired() {
-    _expiredJustNow = 0;
-    state = _read();
   }
 
   void dismissError() => state = _read();
