@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kds/l10n/app_localizations.dart';
+import 'access/kds_view_controller.dart';
+import 'access/kds_view_picker.dart';
 import 'kds_app.dart';
 import 'pairing/pairing_screen.dart';
 import 'state/kds_board.dart';
@@ -39,6 +41,9 @@ class KdsRoot extends ConsumerWidget {
 
     // The engine derives from this identity, so there is no window in which a
     // screen could read it without a branch.
-    return const KdsApp();
+    // No login (owner, 2026-11-25): the tablet asks once which board it is —
+    // « Cuisine » or « Caisse paiement » — and remembers it.
+    final String? view = ref.watch(kdsViewProvider);
+    return KdsApp(home: view == null ? const KdsViewPicker() : null);
   }
 }

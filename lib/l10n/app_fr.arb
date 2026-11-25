@@ -123,5 +123,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "kdsViewPickerTitle": "Quelle vue pour cette tablette ?",
+  "kdsViewKitchen": "Cuisine",
+  "kdsViewKitchenHint": "Nouvelles → En préparation → Prêtes",
+  "kdsViewCashier": "Caisse paiement",
+  "kdsViewCashierHint": "Tickets borne à encaisser",
+  "kdsSwitchView": "Changer de vue"
 }

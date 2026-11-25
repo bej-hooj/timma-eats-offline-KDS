@@ -116,5 +116,11 @@
   "kdsDeleteTitle": "Delete ticket {ticket}?",
   "kdsDeleteBody": "The order will be cancelled. The customer has not paid.",
   "kdsDeleteCancel": "Keep",
-  "kdsDeleteConfirm": "Delete"
+  "kdsDeleteConfirm": "Delete",
+  "kdsViewPickerTitle": "Which view for this tablet?",
+  "kdsViewKitchen": "Kitchen",
+  "kdsViewKitchenHint": "New → Preparing → Ready",
+  "kdsViewCashier": "Cashier",
+  "kdsViewCashierHint": "Kiosk tickets to collect",
+  "kdsSwitchView": "Switch view"
 }

@@ -227,4 +227,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kdsDeleteConfirm => 'Delete';
+
+  @override
+  String get kdsViewPickerTitle => 'Which view for this tablet?';
+
+  @override
+  String get kdsViewKitchen => 'Kitchen';
+
+  @override
+  String get kdsViewKitchenHint => 'New → Preparing → Ready';
+
+  @override
+  String get kdsViewCashier => 'Cashier';
+
+  @override
+  String get kdsViewCashierHint => 'Kiosk tickets to collect';
+
+  @override
+  String get kdsSwitchView => 'Switch view';
 }

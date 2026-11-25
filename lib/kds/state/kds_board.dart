@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_core/pos_core.dart';
 
+import '../access/kds_view.dart';
+import '../access/kds_view_controller.dart';
 import '../audio/kds_alarm_sink.dart';
 import '../domain/kds_alarm.dart';
 import '../domain/kds_lanes.dart';
@@ -82,6 +84,8 @@ class KdsBoardController extends Notifier<KdsBoardState> {
       _tick?.cancel();
     });
     _tick = Timer.periodic(refreshEvery, (_) => refresh());
+    // A view switch changes what the alarm may ring for.
+    ref.listen<String?>(kdsViewProvider, (String? _, String? _) => refresh());
     // ⚠ No automatic expiry sweep (owner, 2026-11-25): unpaid À encaisser
     // tickets vanished after 15 min "with no reason". A ticket now stays until
     // a person settles or deletes it (S10).
@@ -106,7 +110,16 @@ class KdsBoardController extends Notifier<KdsBoardState> {
     // an order arriving from the kiosk changes the board without anyone
     // touching it, and that is precisely the arrival the kitchen must hear. The
     // decision is [KdsAlarm]'s; this only carries it to a speaker.
-    final KdsAlarmCue? cue = _alarm.evaluate(lanes: lanes, now: now);
+    // ⚠ The alarm follows the view: the till must not ring for *Nouvelles*,
+    // the kitchen must not ring for *À encaisser* (S5).
+    final List<String> heard = KdsView.lanesFor(ref.read(kdsViewProvider));
+    final KdsAlarmCue? cue = _alarm.evaluate(
+      lanes: <String, List<PosOrder>>{
+        for (final MapEntry<String, List<PosOrder>> e in lanes.entries)
+          if (heard.contains(e.key)) e.key: e.value,
+      },
+      now: now,
+    );
     if (cue != null) {
       unawaited(_sink.ring(cue.register));
     }

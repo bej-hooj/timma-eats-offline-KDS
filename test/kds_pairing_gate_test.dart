@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_link_flutter/pos_link_flutter.dart';
+import 'package:timma_kds/kds/access/kds_view.dart';
+import 'package:timma_kds/kds/access/kds_view_controller.dart';
+import 'package:timma_kds/kds/access/kds_view_picker.dart';
 import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/kds_root.dart';
 import 'package:timma_kds/kds/pairing/pairing_controller.dart';
@@ -127,6 +130,8 @@ void main() {
     addTearDown(tester.view.reset);
 
     boardStore.writeIdentity(staleIdentity);
+    // S5: a paired board first asks which view; this one already chose.
+    boardStore.writeMeta(KdsViewController.metaKey, KdsView.kitchen);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -157,6 +162,37 @@ void main() {
           'the board must never be a dead end — moving a tablet to another '
           'kiosk cannot require reinstalling it',
     );
+  });
+
+  testWidgets('a paired board with no view chosen asks « Cuisine » or '
+      '« Caisse paiement » — and « Changer de vue » comes back here', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(2532, 1170);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    boardStore.writeIdentity(staleIdentity);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kdsStoreProvider.overrideWithValue(boardStore),
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+        ],
+        child: const KdsRoot(),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(KdsViewPicker), findsOneWidget);
+    expect(find.byType(KdsBoardScreen), findsNothing);
+
+    await tester.tap(find.byKey(const Key('kds-view-kitchen')));
+    await tester.pumpAndSettle();
+    expect(find.byType(KdsBoardScreen), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('kds-switch-view')));
+    await tester.pumpAndSettle();
+    expect(find.byType(KdsViewPicker), findsOneWidget);
   });
 }
 

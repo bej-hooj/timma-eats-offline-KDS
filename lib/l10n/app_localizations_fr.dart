@@ -228,4 +228,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get kdsDeleteConfirm => 'Supprimer';
+
+  @override
+  String get kdsViewPickerTitle => 'Quelle vue pour cette tablette ?';
+
+  @override
+  String get kdsViewKitchen => 'Cuisine';
+
+  @override
+  String get kdsViewKitchenHint => 'Nouvelles → En préparation → Prêtes';
+
+  @override
+  String get kdsViewCashier => 'Caisse paiement';
+
+  @override
+  String get kdsViewCashierHint => 'Tickets borne à encaisser';
+
+  @override
+  String get kdsSwitchView => 'Changer de vue';
 }

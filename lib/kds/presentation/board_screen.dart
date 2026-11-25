@@ -4,6 +4,8 @@ import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kds/design/app_tokens.dart';
 import 'package:timma_kds/l10n/app_localizations.dart';
+import '../access/kds_view.dart';
+import '../access/kds_view_controller.dart';
 import '../domain/kds_lanes.dart';
 import '../link/kds_link.dart';
 import '../state/kds_board.dart';
@@ -26,6 +28,7 @@ class KdsBoardScreen extends ConsumerWidget {
     final KdsBoardController controller = ref.read(kdsBoardProvider.notifier);
     final KdsLinkState link = ref.watch(kdsLinkProvider);
     final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final String? view = ref.watch(kdsViewProvider);
 
     return PopScope(
       // The kitchen board has the same rule as the kiosk (§K8): back must not
@@ -44,12 +47,19 @@ class KdsBoardScreen extends ConsumerWidget {
                   link: link,
                   onMute: controller.muteAlarm,
                   onRepair: () => _confirmRepair(context, ref),
+                  // « Changer de vue » — only once a view was chosen.
+                  onSwitchView: view == null
+                      ? null
+                      : ref.read(kdsViewProvider.notifier).clear,
                 ),
                 const SizedBox(height: KdsScale.gapMd),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (BuildContext context, BoxConstraints box) {
-                      final List<String> lanes = KdsLane.visible(board.lanes);
+                      final List<String> lanes = KdsView.restrict(
+                        KdsLane.visible(board.lanes),
+                        view,
+                      );
                       final double width = KdsScale.laneWidthFor(
                         available: box.maxWidth,
                         count: lanes.length,
@@ -246,12 +256,14 @@ class _Header extends StatelessWidget {
     required this.link,
     required this.onMute,
     required this.onRepair,
+    this.onSwitchView,
   });
 
   final KdsBoardState board;
   final KdsLinkState link;
   final VoidCallback onMute;
   final VoidCallback onRepair;
+  final VoidCallback? onSwitchView;
 
   @override
   Widget build(BuildContext context) {
@@ -406,6 +418,28 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
+        if (onSwitchView != null) ...<Widget>[
+          const SizedBox(width: KdsScale.gapMd),
+          // ⚠ Icon only, at every width: with the label it pushed the header
+          // 142 px over at 844 dp (the iPhone board) once the alarm was on
+          // screen. The tooltip and the semantics label carry the words.
+          Tooltip(
+            message: l10n.kdsSwitchView,
+            child: OutlinedButton(
+              key: const Key('kds-switch-view'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(KdsScale.minTarget, KdsScale.minTarget),
+                padding: EdgeInsets.zero,
+              ),
+              onPressed: onSwitchView,
+              child: Semantics(
+                label: l10n.kdsSwitchView,
+                button: true,
+                child: const Icon(Icons.swap_horiz),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

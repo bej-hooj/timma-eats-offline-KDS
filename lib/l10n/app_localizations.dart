@@ -475,6 +475,42 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Supprimer'**
   String get kdsDeleteConfirm;
+
+  /// No description provided for @kdsViewPickerTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle vue pour cette tablette ?'**
+  String get kdsViewPickerTitle;
+
+  /// No description provided for @kdsViewKitchen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cuisine'**
+  String get kdsViewKitchen;
+
+  /// No description provided for @kdsViewKitchenHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelles → En préparation → Prêtes'**
+  String get kdsViewKitchenHint;
+
+  /// No description provided for @kdsViewCashier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Caisse paiement'**
+  String get kdsViewCashier;
+
+  /// No description provided for @kdsViewCashierHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tickets borne à encaisser'**
+  String get kdsViewCashierHint;
+
+  /// No description provided for @kdsSwitchView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de vue'**
+  String get kdsSwitchView;
 }
 
 class _AppLocalizationsDelegate

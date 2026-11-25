@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:pos_core/testing.dart';
+import 'package:timma_kds/kds/access/kds_view.dart';
+import 'package:timma_kds/kds/access/kds_view_controller.dart';
 import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/domain/kds_alarm.dart';
 import 'package:timma_kds/kds/domain/kds_lanes.dart';
@@ -566,6 +568,8 @@ void _headerFitsTests() {
       tester.view.devicePixelRatio = 3;
       addTearDown(tester.view.reset);
 
+      // The till view puts « Changer de vue » in the same row (S5).
+      store.writeMeta(KdsViewController.metaKey, KdsView.cashier);
       // One unclaimed ticket puts the alarm on screen…
       engine.placeKioskOrder(
         lines: const <PosCartLine>[
@@ -585,6 +589,7 @@ void _headerFitsTests() {
       await tester.pump();
 
       expect(find.text('Couper l\'alarme'), findsOneWidget);
+      expect(find.byKey(const Key('kds-switch-view')), findsOneWidget);
       expect(
         tester.takeException(),
         isNull,

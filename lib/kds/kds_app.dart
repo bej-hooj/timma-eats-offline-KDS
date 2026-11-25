@@ -7,7 +7,10 @@ import 'theme/kds_theme.dart';
 
 /// The kitchen board app. One screen, no router: a cook never navigates.
 class KdsApp extends StatelessWidget {
-  const KdsApp({super.key});
+  const KdsApp({this.home, super.key});
+
+  /// The view picker until a view is chosen; the board otherwise.
+  final Widget? home;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +29,7 @@ class KdsApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const KdsBoardScreen(),
+      home: home ?? const KdsBoardScreen(),
     );
   }
 }
