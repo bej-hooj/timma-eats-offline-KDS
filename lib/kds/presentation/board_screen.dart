@@ -326,11 +326,12 @@ class _Header extends StatelessWidget {
         // Flexible too. Everything on this row that is *words* gives way; the
         // badge and the mute button are the only fixed things, because they are
         // the only things a cook acts on.
-        // ⚠ flex 6 vs the Spacer's 1: at equal flex the title got half the free
-        // room and read « Caisse p… » beside the alarm button (Samsung,
-        // 2026-11-25) while the rest of the row stood empty.
-        Flexible(
-          flex: 6,
+        // ⚠ EXPANDED, and no Spacer after it (Samsung, 2026-11-25): at equal
+        // flex with a Spacer the title got half the room and read « Caisse
+        // p… »; at flex 6 the controls stopped hugging the right edge and the
+        // view switch floated mid-row. The title owns the free room, so the
+        // controls after it always sit at the right edge.
+        Expanded(
           child: Text(
             // The view's own name: « Caisse paiement » must not read « Cuisine ».
             title,
@@ -343,7 +344,6 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: KdsScale.gapLg),
-        const Spacer(),
         // ⚠ **The badge is not decoration.** A board that has silently lost the
         // kiosk looks exactly like a board with no orders — same empty lanes,
         // same calm screen — and a kitchen cannot tell those apart without

@@ -21,7 +21,13 @@ class KdsBoardState {
     this.lines = const <String, List<PosOrderLine>>{},
     this.lastError,
     this.alarmMuted = false,
+    this.heard = KdsLane.all,
   });
+
+  /// The lanes this tablet's view may ring for (S5). « Couper l'alarme »
+  /// must not show for a lane the view cannot hear — seen 2026-11-25: the
+  /// Cuisine view showed it for an unpaid till ticket it never rings for.
+  final List<String> heard;
 
   final Map<String, List<PosOrder>> lanes;
 
@@ -49,7 +55,9 @@ class KdsBoardState {
 
   /// The lane the *waiting* alarm watches. Unclaimed work, not all work.
   bool get hasUnclaimedWork =>
-      lane(KdsLane.counter).isNotEmpty || lane(KdsLane.newTickets).isNotEmpty;
+      (heard.contains(KdsLane.counter) && lane(KdsLane.counter).isNotEmpty) ||
+      (heard.contains(KdsLane.newTickets) &&
+          lane(KdsLane.newTickets).isNotEmpty);
 
   /// True while the alarm is nagging and nobody has muted it — the one
   /// condition that puts *Couper l'alarme* on the screen. Derived rather than
@@ -134,6 +142,7 @@ class KdsBoardController extends Notifier<KdsBoardState> {
       },
       lastError: error,
       alarmMuted: _alarm.muted,
+      heard: heard,
     );
   }
 

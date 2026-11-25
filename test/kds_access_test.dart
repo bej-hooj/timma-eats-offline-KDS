@@ -210,5 +210,13 @@ void main() {
       reason: 'an unpaid ticket belongs to the till',
     );
     expect(find.byKey(const Key('kds-delete-ticket')), findsNothing);
+    // No alarm in this view, so nothing else fills the header: the view
+    // switch must still hug the right edge (it floated mid-row on the
+    // Samsung, 2026-11-25).
+    expect(find.text('Couper l\'alarme'), findsNothing);
+    expect(
+      tester.getTopRight(find.byKey(const Key('kds-switch-view'))).dx,
+      greaterThan(1100),
+    );
   });
 }
