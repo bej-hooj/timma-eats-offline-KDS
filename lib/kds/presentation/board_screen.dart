@@ -326,7 +326,11 @@ class _Header extends StatelessWidget {
         // Flexible too. Everything on this row that is *words* gives way; the
         // badge and the mute button are the only fixed things, because they are
         // the only things a cook acts on.
+        // ⚠ flex 6 vs the Spacer's 1: at equal flex the title got half the free
+        // room and read « Caisse p… » beside the alarm button (Samsung,
+        // 2026-11-25) while the rest of the row stood empty.
         Flexible(
+          flex: 6,
           child: Text(
             // The view's own name: « Caisse paiement » must not read « Cuisine ».
             title,
