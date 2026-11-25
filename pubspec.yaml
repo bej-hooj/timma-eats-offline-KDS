@@ -88,3 +88,9 @@ flutter_launcher_icons:
   # TIMMA brand green behind the adaptive icon foreground (ECOSYSTEM §15.5).
   adaptive_icon_background: "#205A39"
   adaptive_icon_foreground: "assets/branding/app_icon.png"
+  # The KDS also ships as a Windows installer (cuisine PC / mini-PC): its
+  # taskbar and desktop shortcut must wear the same mark (ECOSYSTEM §25.7).
+  windows:
+    generate: true
+    image_path: "assets/branding/app_icon.png"
+    icon_size: 256
