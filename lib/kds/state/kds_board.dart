@@ -66,7 +66,6 @@ class KdsBoardState {
 
 class KdsBoardController extends Notifier<KdsBoardState> {
   Timer? _tick;
-  Timer? _sweep;
 
   /// The rule half of the alarm. Held on the controller, not rebuilt per read:
   /// its whole job is remembering which tickets have already been heard, and a
@@ -89,19 +88,16 @@ class KdsBoardController extends Notifier<KdsBoardState> {
   /// card that lies about how long the kitchen has had it.
   static const Duration refreshEvery = Duration(seconds: 5);
 
-  /// The 15-minute rule is the engine's; this is only how often the board asks
-  /// it to run. A minute is far finer than the rule it enforces and costs one
-  /// local query.
-  static const Duration sweepEvery = Duration(minutes: 1);
 
   @override
   KdsBoardState build() {
     ref.onDispose(() {
       _tick?.cancel();
-      _sweep?.cancel();
     });
     _tick = Timer.periodic(refreshEvery, (_) => refresh());
-    _sweep = Timer.periodic(sweepEvery, (_) => expireStaleUnpaid());
+    // ⚠ No automatic expiry sweep (owner, 2026-11-25): unpaid À encaisser
+    // tickets vanished after 15 min "with no reason". A ticket now stays until
+    // a person settles or deletes it (S10).
     return _read();
   }
 
