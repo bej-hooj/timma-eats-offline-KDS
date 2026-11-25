@@ -1,4 +1,6 @@
 {
+  "kdsItems": "{count, plural, =0{aucun article} =1{1 article} other{{count} articles}}",
+  "@kdsItems": {"description": "Collapsed ticket summary: how many dishes are on it.", "placeholders": {"count": {"type": "int"}}},
   "kdsBoardTitle": "Cuisine",
   "kdsLaneCounter": "À encaisser",
   "kdsLaneScheduled": "Programmées",

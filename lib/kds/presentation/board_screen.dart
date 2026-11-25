@@ -8,6 +8,7 @@ import '../domain/kds_lanes.dart';
 import '../link/kds_link.dart';
 import '../state/kds_board.dart';
 import '../theme/kds_scale.dart';
+import 'widgets/kds_scrollable.dart';
 import 'widgets/kds_ticket_card.dart';
 
 /// The kitchen board: six lanes, oldest first, one tap per ticket.
@@ -393,7 +394,7 @@ class _Header extends StatelessWidget {
 /// reserved height computed from a different number is a clipped heading.
 const double _laneTitleLineHeight = 1.1;
 
-class _Lane extends StatelessWidget {
+class _Lane extends StatefulWidget {
   const _Lane({
     required this.width,
     required this.titleSize,
@@ -419,10 +420,25 @@ class _Lane extends StatelessWidget {
   final void Function(PosOrder order) onAction;
 
   @override
+  State<_Lane> createState() => _LaneState();
+}
+
+class _LaneState extends State<_Lane> {
+  /// One controller per lane, owned here: [KdsScrollable] listens to it to
+  /// know whether there are tickets below the fold.
+  final ScrollController scroll = ScrollController();
+
+  @override
+  void dispose() {
+    scroll.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Container(
-      width: width,
+      width: widget.width,
       margin: const EdgeInsets.only(right: KdsScale.gapMd),
       // ⚠ **A lane is a column, and a column has edges.** Screenshotted on the
       // real board 2026-11-23: four headings floating on one flat cream field,
@@ -443,7 +459,7 @@ class _Lane extends StatelessWidget {
         //
         // The ticket cards inside are white and carry a 3 dp urgency border,
         // so they stand off both steps — checked on the device, not assumed.
-        color: tinted ? AppColors.surfaceMuted : AppColors.surface,
+        color: widget.tinted ? AppColors.surfaceMuted : AppColors.surface,
         borderRadius: BorderRadius.circular(KdsScale.radius),
         border: Border.all(color: AppColors.outline),
       ),
@@ -452,7 +468,7 @@ class _Lane extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
-            // The count is the fixed part and the title bends around it: a
+            // The count is the fixed part and the widget.title bends around it: a
             // lane that shows its name and hides how much work is in it has
             // the priority backwards.
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,24 +481,24 @@ class _Lane extends StatelessWidget {
                 // columns with four type sizes read as if they were ranked.
                 // The ellipsis stays as the last resort below the floor.
                 // ⚠ **Two lines of room are reserved whether or not the
-                // title uses them.** Otherwise *En préparation* (two lines)
+                // widget.title uses them.** Otherwise *En préparation* (two lines)
                 // pushes its divider lower than the three one-line lanes
                 // beside it, and four columns that should read as one row of
                 // headings read as a ragged edge.
                 child: SizedBox(
                   height:
-                      titleSize *
+                      widget.titleSize *
                       _laneTitleLineHeight *
                       KdsScale.laneTitleMaxLines *
                       MediaQuery.textScalerOf(context).scale(1),
                   child: Align(
                     alignment: Alignment.topLeft,
                     child: Text(
-                      title,
+                      widget.title,
                       maxLines: KdsScale.laneTitleMaxLines,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: titleSize,
+                        fontSize: widget.titleSize,
                         fontWeight: FontWeight.w700,
                         height: _laneTitleLineHeight,
                       ),
@@ -494,10 +510,12 @@ class _Lane extends StatelessWidget {
               // The count reads as a tally, not as part of the name.
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: orders.isEmpty
-                      // On a tinted lane the muted chip would vanish into its
+                  color: widget.orders.isEmpty
+                      // On a widget.tinted lane the muted chip would vanish into its
                       // own background.
-                      ? (tinted ? AppColors.surface : AppColors.surfaceMuted)
+                      ? (widget.tinted
+                            ? AppColors.surface
+                            : AppColors.surfaceMuted)
                       : AppColors.primarySoft,
                   borderRadius: BorderRadius.circular(KdsScale.radiusSmall),
                 ),
@@ -507,11 +525,11 @@ class _Lane extends StatelessWidget {
                     vertical: 2,
                   ),
                   child: Text(
-                    '${orders.length}',
+                    '${widget.orders.length}',
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontSize: KdsScale.bodySize,
                       fontWeight: FontWeight.w800,
-                      color: orders.isEmpty
+                      color: widget.orders.isEmpty
                           ? AppColors.textMuted
                           : AppColors.primary,
                     ),
@@ -524,7 +542,7 @@ class _Lane extends StatelessWidget {
           Divider(height: 1, thickness: 1, color: AppColors.outline),
           const SizedBox(height: KdsScale.gapMd),
           Expanded(
-            child: orders.isEmpty
+            child: widget.orders.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -536,7 +554,7 @@ class _Lane extends StatelessWidget {
                         ),
                         const SizedBox(height: KdsScale.gap),
                         Text(
-                          emptyLabel,
+                          widget.emptyLabel,
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: AppColors.textMuted,
                           ),
@@ -552,37 +570,52 @@ class _Lane extends StatelessWidget {
                         (
                           BuildContext context,
                           BoxConstraints constraints,
-                        ) => ListView.builder(
-                          itemCount: orders.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final PosOrder order = orders[index];
-                            final bool actionable =
-                                order.status == PosOrderStatus.pendingPayment ||
-                                KdsLane.advanceFor(order.status, order.mode) !=
-                                    null;
-                            return KdsTicketCard(
-                              order: order,
-                              lines: linesOf(order.clientId),
-                              now: now,
-                              // ⚠⚠ **The lane's visible height, never more.**
-                              // Owner, 2026-11-24: *"be sure the user can
-                              // always click on all buttons — currently
-                              // Encaisser is not reachable on kitchen"*. A
-                              // card taller than the lane puts its action
-                              // below the fold, and a control a cook cannot
-                              // reach does not exist.
-                              //
-                              // The card is what adapts instead: see the
-                              // `compact` branch in `KdsTicketCard`, which
-                              // puts the ticket code and the dishes FIRST so
-                              // the little room a short screen leaves is
-                              // spent on what a cook actually reads.
-                              maxHeight: constraints.maxHeight,
-                              onPrimaryAction: actionable
-                                  ? () => onAction(order)
-                                  : null,
-                            );
-                          },
+                        ) => KdsScrollable(
+                          controller: scroll,
+                          child: ListView.builder(
+                            controller: scroll,
+                            itemCount: widget.orders.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final PosOrder order = widget.orders[index];
+                              final bool actionable =
+                                  order.status ==
+                                      PosOrderStatus.pendingPayment ||
+                                  KdsLane.advanceFor(
+                                        order.status,
+                                        order.mode,
+                                      ) !=
+                                      null;
+                              return KdsTicketCard(
+                                // ⚠ **The front of the queue opens; the rest
+                                // collapse.** Owner, 2026-11-24. Defaulting
+                                // everything to collapsed would make a cook tap
+                                // before they could cook; defaulting everything
+                                // to open is what filled the board. Two is what
+                                // a pair of hands is actually working on.
+                                startExpanded: index < 2,
+                                order: order,
+                                lines: widget.linesOf(order.clientId),
+                                now: widget.now,
+                                // ⚠⚠ **The lane's visible height, never more.**
+                                // Owner, 2026-11-24: *"be sure the user can
+                                // always click on all buttons — currently
+                                // Encaisser is not reachable on kitchen"*. A
+                                // card taller than the lane puts its action
+                                // below the fold, and a control a cook cannot
+                                // reach does not exist.
+                                //
+                                // The card is what adapts instead: see the
+                                // `compact` branch in `KdsTicketCard`, which
+                                // puts the ticket code and the dishes FIRST so
+                                // the little room a short screen leaves is
+                                // spent on what a cook actually reads.
+                                maxHeight: constraints.maxHeight,
+                                onPrimaryAction: actionable
+                                    ? () => widget.onAction(order)
+                                    : null,
+                              );
+                            },
+                          ),
                         ),
                   ),
           ),

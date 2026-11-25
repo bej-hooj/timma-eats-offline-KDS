@@ -98,6 +98,12 @@ abstract class AppLocalizations {
     Locale('fr'),
   ];
 
+  /// Collapsed ticket summary: how many dishes are on it.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{aucun article} =1{1 article} other{{count} articles}}'**
+  String kdsItems(int count);
+
   /// No description provided for @kdsBoardTitle.
   ///
   /// In fr, this message translates to:

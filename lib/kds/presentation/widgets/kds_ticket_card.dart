@@ -15,13 +15,14 @@ import '../../theme/kds_scale.dart';
 /// other either hands out free food or asks a customer to pay twice. A
 /// paid-online ticket enters the cook lane directly and never shows a cash
 /// button at all.
-class KdsTicketCard extends StatelessWidget {
+class KdsTicketCard extends StatefulWidget {
   const KdsTicketCard({
     required this.order,
     required this.lines,
     required this.now,
     required this.onPrimaryAction,
     this.maxHeight,
+    this.startExpanded = true,
     super.key,
   });
 
@@ -55,8 +56,43 @@ class KdsTicketCard extends StatelessWidget {
   /// cannot reach is a control that does not exist.
   final double? maxHeight;
 
+  /// Whether this card opens showing its dishes.
+  ///
+  /// ⚠ **Owner, 2026-11-24:** *"for space, for better rendering, tickets
+  /// should have collapse and just show their number, then user expands to
+  /// see everything ordered inside"*.
+  ///
+  /// The lane decides: the tickets a cook is working on NOW open, the queue
+  /// behind them collapses to a line each. Defaulting everything to collapsed
+  /// would make a cook tap before they could cook, and defaulting everything
+  /// to open is what filled the board in the first place.
+  final bool startExpanded;
+
+  @override
+  State<KdsTicketCard> createState() => _KdsTicketCardState();
+}
+
+class _KdsTicketCardState extends State<KdsTicketCard> {
+  late bool _expanded = widget.startExpanded;
+
+  @override
+  void didUpdateWidget(KdsTicketCard old) {
+    super.didUpdateWidget(old);
+    // A ticket that moves lane (or that the lane re-ranks) takes the lane's
+    // new suggestion; a cook's own tap is not undone by a board refresh,
+    // which happens every five seconds.
+    if (old.startExpanded != widget.startExpanded) {
+      _expanded = widget.startExpanded;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final PosOrder order = widget.order;
+    final List<PosOrderLine> lines = widget.lines;
+    final DateTime now = widget.now;
+    final double? maxHeight = widget.maxHeight;
+    final VoidCallback? onPrimaryAction = widget.onPrimaryAction;
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
     final KdsUrgency urgency = KdsSla.urgencyOf(order, now);
@@ -99,94 +135,101 @@ class KdsTicketCard extends StatelessWidget {
               // Everything a cook READS scrolls; the thing a cook PRESSES does
               // not. The button is a sibling of this box, never inside it.
               Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      // ⚠ On a short board the chips go BELOW. A 411 dp
-                      // screen leaves this scroll area about 70 dp, and what
-                      // belongs in it is the ticket code and the dish — not
-                      // "Borne" and "Non payé", which a cook can scroll to.
-                      if (compact) ...<Widget>[
-                        if (identity != null)
-                          Text(
-                            l10n.kdsTicket(identity),
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: KdsScale.bodySize,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        for (final PosOrderLine line in lines)
-                          _Line(line: line, french: french, l10n: l10n),
-                        if (lines.isEmpty)
-                          Text(
-                            l10n.kdsLinesPending,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: AppColors.textMuted,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        const SizedBox(height: KdsScale.gap),
-                      ],
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          // Wrapped, not a fixed Row: the French money-state label
-                          // ("À encaisser") plus a source chip overflowed a 320-wide
-                          // lane, and a card that clips its own money state is the one
-                          // thing §1.6 says it must never do.
-                          Expanded(
-                            child: Wrap(
-                              spacing: KdsScale.gap,
-                              runSpacing: 4,
-                              children: <Widget>[
-                                _Chip(
-                                  label: _sourceLabel(l10n, order.source),
-                                  color: AppColors.primarySoft,
-                                  textColor: AppColors.primary,
-                                ),
-                                _Chip(
-                                  label: paid ? l10n.kdsPaid : l10n.kdsUnpaid,
-                                  color: paid
-                                      ? AppColors.primary
-                                      : theme.colorScheme.error,
-                                  textColor: paid
-                                      ? AppColors.onPrimary
-                                      : theme.colorScheme.onError,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: KdsScale.gap),
-                          // ⚠ Flexible: on a narrow lane the chips beside it
-                          // take what they need and this ran 8.5 px over.
-                          // The age gives way before the money state does.
-                          Flexible(
-                            child: Text(
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              // ⚠ **Hours past three of them, never minutes.**
-                              // Seen on the real board 2026-11-23: a ticket
-                              // synced down from the cloud read **142411 min**,
-                              // which is three months expressed in a unit for
-                              // tens. It is not a wrong number — it is a number
-                              // in a unit nobody can read, on the mark a cook is
-                              // meant to glance at. A board whose urgency mark
-                              // is noise is a board that trains people to ignore
-                              // the mark.
-                              waiting < const Duration(hours: 3)
-                                  ? l10n.kdsWaitingMinutes(waited)
-                                  : l10n.kdsWaitingLong(waiting.inHours),
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: _urgencyColor(theme, urgency),
-                                fontWeight: FontWeight.w700,
+                // ⚠ The whole readable area toggles, not a small chevron: a
+                // cook with a gloved wet hand aims at a card, not at a 24 dp
+                // glyph. The action button is a SIBLING of this box, so
+                // pressing it can never be mistaken for opening the ticket.
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        // ⚠ On a short board the chips go BELOW. A 411 dp
+                        // screen leaves this scroll area about 70 dp, and what
+                        // belongs in it is the ticket code and the dish — not
+                        // "Borne" and "Non payé", which a cook can scroll to.
+                        if (compact) ...<Widget>[
+                          if (identity != null)
+                            Text(
+                              l10n.kdsTicket(identity),
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontSize: KdsScale.bodySize,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
-                          ),
+                          for (final PosOrderLine line in lines)
+                            _Line(line: line, french: french, l10n: l10n),
+                          if (lines.isEmpty)
+                            Text(
+                              l10n.kdsLinesPending,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: AppColors.textMuted,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          const SizedBox(height: KdsScale.gap),
                         ],
-                      ),
-                      const SizedBox(height: KdsScale.gapMd),
-                      /*
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            // Wrapped, not a fixed Row: the French money-state label
+                            // ("À encaisser") plus a source chip overflowed a 320-wide
+                            // lane, and a card that clips its own money state is the one
+                            // thing §1.6 says it must never do.
+                            Expanded(
+                              child: Wrap(
+                                spacing: KdsScale.gap,
+                                runSpacing: 4,
+                                children: <Widget>[
+                                  _Chip(
+                                    label: _sourceLabel(l10n, order.source),
+                                    color: AppColors.primarySoft,
+                                    textColor: AppColors.primary,
+                                  ),
+                                  _Chip(
+                                    label: paid ? l10n.kdsPaid : l10n.kdsUnpaid,
+                                    color: paid
+                                        ? AppColors.primary
+                                        : theme.colorScheme.error,
+                                    textColor: paid
+                                        ? AppColors.onPrimary
+                                        : theme.colorScheme.onError,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: KdsScale.gap),
+                            // ⚠ Flexible: on a narrow lane the chips beside it
+                            // take what they need and this ran 8.5 px over.
+                            // The age gives way before the money state does.
+                            Flexible(
+                              child: Text(
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                // ⚠ **Hours past three of them, never minutes.**
+                                // Seen on the real board 2026-11-23: a ticket
+                                // synced down from the cloud read **142411 min**,
+                                // which is three months expressed in a unit for
+                                // tens. It is not a wrong number — it is a number
+                                // in a unit nobody can read, on the mark a cook is
+                                // meant to glance at. A board whose urgency mark
+                                // is noise is a board that trains people to ignore
+                                // the mark.
+                                waiting < const Duration(hours: 3)
+                                    ? l10n.kdsWaitingMinutes(waited)
+                                    : l10n.kdsWaitingLong(waiting.inHours),
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: _urgencyColor(theme, urgency),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: KdsScale.gapMd),
+                        /*
              * ⚠ The STATION, not just the number.
              *
              * `allocateTicketNumber` counts per till and restarts at 1 every
@@ -197,80 +240,125 @@ class KdsTicketCard extends StatelessWidget {
              * a wrong station sends a cook to the wrong customer, which is
              * worse than no station at all.
              */
-                      // ⚠ A ticket from the CLOUD has no local number — it was
-                      // not printed by any borne here — so it fell through
-                      // this `if` and the card carried NOTHING a cook could
-                      // call out. `daily_code` is the kitchen's own code,
-                      // minted by the server for exactly this (ECOSYSTEM
-                      // §6.4), and `order_code` is the last resort.
-                      if (identity != null && !compact)
-                        Text(
-                          l10n.kdsTicket(identity),
-                          style: theme.textTheme.titleLarge,
-                        ),
-                      if (lines.isNotEmpty && !compact) ...<Widget>[
-                        const SizedBox(height: KdsScale.gapMd),
-                        for (final PosOrderLine line in lines)
-                          _Line(line: line, french: french, l10n: l10n),
-                      ] else if (lines.isEmpty && !compact) ...<Widget>[
-                        // ⚠ A card with no dishes on it looks like a bug, and
-                        // a cook cannot tell "nothing ordered" from "the
-                        // detail has not arrived". Say which.
-                        const SizedBox(height: KdsScale.gapMd),
-                        Text(
-                          l10n.kdsLinesPending,
-                          key: const Key('kds-lines-pending'),
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: AppColors.textMuted,
-                            fontStyle: FontStyle.italic,
+                        // ⚠ A ticket from the CLOUD has no local number — it was
+                        // not printed by any borne here — so it fell through
+                        // this `if` and the card carried NOTHING a cook could
+                        // call out. `daily_code` is the kitchen's own code,
+                        // minted by the server for exactly this (ECOSYSTEM
+                        // §6.4), and `order_code` is the last resort.
+                        if (identity != null && !compact)
+                          Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
+                                  l10n.kdsTicket(identity),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleLarge,
+                                ),
+                              ),
+                              // ⚠ The affordance has to be VISIBLE. A card that
+                              // can be opened but does not look like it is a
+                              // card nobody opens.
+                              Icon(
+                                _expanded
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                color: AppColors.textMuted,
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                      if (order.note != null &&
-                          order.note!.trim().isNotEmpty) ...<Widget>[
-                        const SizedBox(height: KdsScale.gap),
-                        // A note is an instruction from a person, not decoration: it is
-                        // given its own emphasis so it cannot be skimmed past.
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(KdsScale.gap),
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(KdsScale.gap),
-                          ),
-                          child: Text(
-                            order.note!.trim(),
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontSize: KdsScale.labelSize,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: compact ? 2 : KdsScale.gap),
-                      // ⚠ One line, always. Seen on the Samsung: the total
-                      // wrapped to "5 100 FCF / A" and the second line was
-                      // clipped by the card. `scaleDown` only ever shrinks.
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            MoneyFormatter.formatXaf(order.total),
+                        // ⚠ **Collapsed, a ticket is one line.** Owner,
+                        // 2026-11-24: the board filled up with open tickets and
+                        // a cook could not see the queue. Collapsed it still
+                        // carries the two things that decide whether to open
+                        // it — how much is on it and what it comes to — and the
+                        // action stays pressable without opening anything.
+                        if (!_expanded && !compact) ...<Widget>[
+                          const SizedBox(height: KdsScale.gap),
+                          Text(
+                            '${l10n.kdsItems(_itemCount(lines))}  ·  '
+                            '${MoneyFormatter.formatXaf(order.total)}',
+                            key: const Key('kds-ticket-summary'),
                             maxLines: 1,
-                            style: TextStyle(
-                              fontSize: compact
-                                  ? KdsScale.bodySize
-                                  : KdsScale.totalSize,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.onSurface,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontSize: KdsScale.labelSize,
+                              color: AppColors.textMuted,
                             ),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                        if (_expanded &&
+                            lines.isNotEmpty &&
+                            !compact) ...<Widget>[
+                          const SizedBox(height: KdsScale.gapMd),
+                          for (final PosOrderLine line in lines)
+                            _Line(line: line, french: french, l10n: l10n),
+                        ] else if (_expanded &&
+                            lines.isEmpty &&
+                            !compact) ...<Widget>[
+                          // ⚠ A card with no dishes on it looks like a bug, and
+                          // a cook cannot tell "nothing ordered" from "the
+                          // detail has not arrived". Say which.
+                          const SizedBox(height: KdsScale.gapMd),
+                          Text(
+                            l10n.kdsLinesPending,
+                            key: const Key('kds-lines-pending'),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: AppColors.textMuted,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                        if (_expanded &&
+                            order.note != null &&
+                            order.note!.trim().isNotEmpty) ...<Widget>[
+                          const SizedBox(height: KdsScale.gap),
+                          // A note is an instruction from a person, not decoration: it is
+                          // given its own emphasis so it cannot be skimmed past.
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(KdsScale.gap),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySoft,
+                              borderRadius: BorderRadius.circular(KdsScale.gap),
+                            ),
+                            child: Text(
+                              order.note!.trim(),
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontSize: KdsScale.labelSize,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (_expanded)
+                          SizedBox(height: compact ? 2 : KdsScale.gap),
+                        if (_expanded)
+                          // ⚠ One line, always. Seen on the Samsung: the total
+                          // wrapped to "5 100 FCF / A" and the second line was
+                          // clipped by the card. `scaleDown` only ever shrinks.
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                MoneyFormatter.formatXaf(order.total),
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: compact
+                                      ? KdsScale.bodySize
+                                      : KdsScale.totalSize,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.onSurface,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -303,6 +391,12 @@ class KdsTicketCard extends StatelessWidget {
       ),
     );
   }
+
+  /// How many dishes are on the ticket — the sum of the quantities, not the
+  /// number of lines. "2 articles" for one line of two is what a cook counts
+  /// into a bag.
+  static int _itemCount(List<PosOrderLine> lines) =>
+      lines.fold<int>(0, (int sum, PosOrderLine l) => sum + l.quantity);
 
   static String? _clean(String? value) {
     final String? trimmed = value?.trim();
