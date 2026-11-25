@@ -190,6 +190,9 @@ void main() {
     expect(find.text('Prêtes'), findsNothing);
     expect(find.byType(KdsTicketCard), findsOneWidget);
     expect(find.byKey(const Key('kds-switch-view')), findsOneWidget);
+    // The header names the view (seen on the Samsung: it read « Cuisine »).
+    expect(find.text('Caisse paiement'), findsOneWidget);
+    expect(find.text('Cuisine'), findsNothing);
   });
 
   testWidgets('Cuisine never draws À encaisser or its tickets', (tester) async {

@@ -47,6 +47,9 @@ class KdsBoardScreen extends ConsumerWidget {
                   link: link,
                   onMute: controller.muteAlarm,
                   onRepair: () => _confirmRepair(context, ref),
+                  title: view == KdsView.cashier
+                      ? l10n.kdsViewCashier
+                      : l10n.kdsBoardTitle,
                   // « Changer de vue » — only once a view was chosen.
                   onSwitchView: view == null
                       ? null
@@ -256,9 +259,11 @@ class _Header extends StatelessWidget {
     required this.link,
     required this.onMute,
     required this.onRepair,
+    required this.title,
     this.onSwitchView,
   });
 
+  final String title;
   final KdsBoardState board;
   final KdsLinkState link;
   final VoidCallback onMute;
@@ -305,6 +310,12 @@ class _Header extends StatelessWidget {
                 'assets/branding/logo_inline.png',
                 height: KdsScale.headlineSize,
                 fit: BoxFit.contain,
+                // ⚠ The wordmark asset is GOLD (for green screens). On this
+                // cream header it was near-invisible on the Samsung
+                // (2026-11-25), so it is tinted brand green here; "eats" is
+                // knocked out of the pill, so the tint keeps it legible.
+                color: AppColors.primary,
+                colorBlendMode: BlendMode.srcIn,
                 errorBuilder: (BuildContext _, Object _, StackTrace? _) =>
                     const SizedBox.shrink(),
               ),
@@ -317,7 +328,8 @@ class _Header extends StatelessWidget {
         // the only things a cook acts on.
         Flexible(
           child: Text(
-            l10n.kdsBoardTitle,
+            // The view's own name: « Caisse paiement » must not read « Cuisine ».
+            title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.headlineLarge?.copyWith(
