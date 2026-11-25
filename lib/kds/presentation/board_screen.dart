@@ -95,8 +95,22 @@ class KdsBoardScreen extends ConsumerWidget {
                         countChipWidth: chip + KdsScale.laneCountChipPadding,
                         measure: (String text) => _measure(text, base, scaler),
                       );
+                      // ⚠ **Centred when they do not fill the board.** At a
+                      // 1080p TV geometry the lanes used to sit hard against
+                      // the left with a third of the screen empty beside
+                      // them. They grow first (see `laneWidthMax`); whatever
+                      // is still left over is split evenly so the board reads
+                      // as a board rather than as a panel that failed to
+                      // load.
                       return ListView(
                         scrollDirection: Axis.horizontal,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _sideGutter(
+                            available: box.maxWidth,
+                            laneWidth: width,
+                            lanes: lanes.length,
+                          ),
+                        ),
                         children: <Widget>[
                           for (final (int index, String lane) in lanes.indexed)
                             _Lane(
@@ -164,6 +178,23 @@ class KdsBoardScreen extends ConsumerWidget {
       await ref.read(kdsLinkProvider.notifier).stop();
       ref.read(kdsIdentityProvider.notifier).requirePairing();
     }
+  }
+
+  /// What to leave on each side so the lanes sit in the middle of a board
+  /// they do not fill. Zero whenever they do — a board that scrolls must
+  /// start at its first lane.
+  static double _sideGutter({
+    required double available,
+    required double laneWidth,
+    required int lanes,
+  }) {
+    if (lanes <= 0) {
+      return 0;
+    }
+    // Each lane carries its own right margin (`KdsScale.gapMd`).
+    final double used = lanes * (laneWidth + KdsScale.gapMd);
+    final double slack = available - used;
+    return slack <= 0 ? 0 : slack / 2;
   }
 
   /// The width [text] would take at [style]. A `TextPainter` rather than a
@@ -593,6 +624,7 @@ class _LaneState extends State<_Lane> {
                                 // to open is what filled the board. Two is what
                                 // a pair of hands is actually working on.
                                 startExpanded: index < 2,
+                                laneWidth: widget.width,
                                 order: order,
                                 lines: widget.linesOf(order.clientId),
                                 now: widget.now,

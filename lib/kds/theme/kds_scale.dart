@@ -60,8 +60,22 @@ abstract final class KdsScale {
   /// scrolls, and every dp here comes off the text a cook actually reads.
   static const double thumbSide = 52;
 
-  /// The widest a lane column should ever be, on a big kitchen tablet.
-  static const double laneWidthMax = 320;
+  /// The widest a lane column should ever be.
+  ///
+  /// ⚠⚠ **320 wasted half a television.** Rendered at a 1080p TV geometry
+  /// (2 280 x 1 080 dp) on 2026-11-25: four 320 dp lanes took 1 328 dp and
+  /// left about 950 dp of empty cream down the right-hand side, with type
+  /// sized for a tablet sitting in the corner of a room-sized screen.
+  ///
+  /// A kitchen board is read from across a room, so on a big screen the lanes
+  /// should GROW rather than huddle. 520 lets four of them fill a 1080p TV
+  /// and still leaves a sane column on a 1 280 dp PC, where the share works
+  /// out around 300.
+  static const double laneWidthMax = 520;
+
+  /// Above this lane width the card prints large: a board that wide is on a
+  /// wall, not on a counter, and its reader is metres away.
+  static const double laneWidthLarge = 380;
 
   /// The narrowest a lane may be squeezed to before scrolling is the better
   /// answer. Below this a ticket's dish names start wrapping to three lines and

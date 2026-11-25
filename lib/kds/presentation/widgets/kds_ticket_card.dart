@@ -23,6 +23,7 @@ class KdsTicketCard extends StatefulWidget {
     required this.onPrimaryAction,
     this.maxHeight,
     this.startExpanded = true,
+    this.laneWidth = 0,
     super.key,
   });
 
@@ -67,6 +68,11 @@ class KdsTicketCard extends StatefulWidget {
   /// would make a cook tap before they could cook, and defaulting everything
   /// to open is what filled the board in the first place.
   final bool startExpanded;
+
+  /// How wide the lane holding this card is. Passed rather than measured: the
+  /// card decides its type step from it, and a `MediaQuery` would give it the
+  /// whole board instead of its own column.
+  final double laneWidth;
 
   @override
   State<KdsTicketCard> createState() => _KdsTicketCardState();
@@ -116,6 +122,14 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
     final bool compact = (maxHeight ?? double.infinity) < 320;
     final double pad = compact ? KdsScale.gap : KdsScale.gapMd;
 
+    // ⚠ **A board on a wall is read from metres away.** Rendered at a 1080p
+    // TV geometry on 2026-11-25: the card's tablet-sized type looked like
+    // small print on a room-sized screen. Above [KdsScale.laneWidthLarge] the
+    // card prints a step larger — the dish, the code and the total, which are
+    // the three things a cook reads at distance.
+    final bool large = !compact && widget.laneWidth >= KdsScale.laneWidthLarge;
+    final double step = large ? 1.25 : 1.0;
+
     return Card(
       margin: const EdgeInsets.only(bottom: KdsScale.gapMd),
       shape: RoundedRectangleBorder(
@@ -160,7 +174,12 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
                               ),
                             ),
                           for (final PosOrderLine line in lines)
-                            _Line(line: line, french: french, l10n: l10n),
+                            _Line(
+                              line: line,
+                              french: french,
+                              l10n: l10n,
+                              step: step,
+                            ),
                           if (lines.isEmpty)
                             Text(
                               l10n.kdsLinesPending,
@@ -254,7 +273,9 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
                                   l10n.kdsTicket(identity),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleLarge,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontSize: KdsScale.titleSize * step,
+                                  ),
                                 ),
                               ),
                               // ⚠ The affordance has to be VISIBLE. A card that
@@ -293,7 +314,12 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
                             !compact) ...<Widget>[
                           const SizedBox(height: KdsScale.gapMd),
                           for (final PosOrderLine line in lines)
-                            _Line(line: line, french: french, l10n: l10n),
+                            _Line(
+                              line: line,
+                              french: french,
+                              l10n: l10n,
+                              step: step,
+                            ),
                         ] else if (_expanded &&
                             lines.isEmpty &&
                             !compact) ...<Widget>[
@@ -350,7 +376,7 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
                                 style: TextStyle(
                                   fontSize: compact
                                       ? KdsScale.bodySize
-                                      : KdsScale.totalSize,
+                                      : KdsScale.totalSize * step,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.onSurface,
                                 ),
@@ -479,11 +505,19 @@ class _Chip extends StatelessWidget {
 /// and in capitals, because it is the one thing on the card that changes what
 /// the cook must NOT do.
 class _Line extends StatelessWidget {
-  const _Line({required this.line, required this.french, required this.l10n});
+  const _Line({
+    required this.line,
+    required this.french,
+    required this.l10n,
+    this.step = 1.0,
+  });
 
   final PosOrderLine line;
   final bool french;
   final AppLocalizations l10n;
+
+  /// Type multiplier for a wall-mounted board — see `KdsScale.laneWidthLarge`.
+  final double step;
 
   @override
   Widget build(BuildContext context) {
@@ -566,7 +600,7 @@ class _Line extends StatelessWidget {
                 child: Text(
                   '${line.quantity} ×',
                   style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: KdsScale.bodySize,
+                    fontSize: KdsScale.bodySize * step,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                   ),
@@ -579,7 +613,7 @@ class _Line extends StatelessWidget {
                     Text(
                       french ? line.nameFr : line.nameEn,
                       style: theme.textTheme.titleLarge?.copyWith(
-                        fontSize: KdsScale.bodySize,
+                        fontSize: KdsScale.bodySize * step,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

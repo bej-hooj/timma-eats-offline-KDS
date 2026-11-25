@@ -6,6 +6,7 @@ import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/kds_app.dart';
 import 'package:timma_kds/kds/presentation/widgets/kds_ticket_card.dart';
 import 'package:timma_kds/kds/state/kds_board.dart';
+import 'package:timma_kds/l10n/app_localizations.dart';
 
 /// Owner, 2026-11-24, watching the board fill up on a large screen: *"for
 /// space, for better rendering, tickets should have collapse and just show
@@ -148,23 +149,51 @@ void main() {
     );
   });
 
-  testWidgets('a queue collapses behind the two being worked on', (
+  testWidgets('a ticket told to start collapsed shows one line, not dishes', (
     tester,
   ) async {
-    await show(tester, tickets: 4);
+    // ⚠ Asserted on the CARD, not through the board. The lane is a lazy
+    // `ListView` and an expanded card is tall, so how many of a queue it has
+    // built depends on the viewport — a board-level assertion here would be
+    // asserting the viewport rather than the rule. What the board decides
+    // (`startExpanded: index < 2`) is one line; what it MEANS is this.
+    await show(tester);
+    final PosOrder order = engine.store.openOrders().single;
 
-    // ⚠ The whole point of the feature: four open tickets fill a lane and
-    // hide the queue. Two open, the rest one line each.
-    // ⚠ "At least one", not "exactly two": the lane is a lazy `ListView`, so
-    // how many of the four it has built depends on the height, and asserting
-    // an exact count would be asserting the viewport rather than the rule.
-    // What the rule says is that the queue BEHIND the first two is collapsed.
-    expect(
-      find.byKey(const Key('kds-ticket-summary')),
-      findsAtLeastNWidgets(1),
-      reason: 'the tickets behind the first two should be collapsed',
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            width: 320,
+            height: 600,
+            child: KdsTicketCard(
+              order: order,
+              lines: engine.store.linesOf(order.clientId),
+              now: DateTime.now().toUtc(),
+              onPrimaryAction: () {},
+              maxHeight: 600,
+              laneWidth: 320,
+              startExpanded: false,
+            ),
+          ),
+        ),
+      ),
     );
-    // And the front of the queue is still open.
-    expect(find.textContaining('Jus'), findsWidgets);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('kds-ticket-summary')), findsOneWidget);
+    expect(find.textContaining('2 articles'), findsOneWidget);
+    expect(find.textContaining('Jus'), findsNothing);
+    // And it can still be settled without opening it.
+    expect(
+      find.descendant(
+        of: find.byType(KdsTicketCard),
+        matching: find.byType(FilledButton),
+      ),
+      findsWidgets,
+    );
   });
 }

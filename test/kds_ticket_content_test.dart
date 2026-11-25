@@ -487,6 +487,52 @@ void main() {
     });
   }
 
+  testWidgets('a television board fills its width and prints large', (
+    tester,
+  ) async {
+    // ⚠ Rendered at a 1080p TV geometry on 2026-11-25 (2 280 x 1 080 dp, on a
+    // phone with its density dropped): four 320 dp lanes took 1 328 dp and
+    // left about 950 of empty cream down the right, with tablet-sized type in
+    // the corner of a room-sized screen. A kitchen board is read from metres
+    // away.
+    tester.view.physicalSize = const Size(2280, 1080);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    engine.placeKioskOrder(
+      lines: const <PosCartLine>[PosCartLine(productId: 'p-jus', quantity: 2)],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kdsEngineProvider.overrideWithValue(engine),
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+        ],
+        child: const KdsApp(),
+      ),
+    );
+    await tester.pump();
+
+    // The lanes use the board: from the left edge of the first to the right
+    // edge of the last is most of the width, not a third of it.
+    final Rect first = tester.getRect(find.text('À encaisser').first);
+    final Rect last = tester.getRect(find.text('Prêtes').first);
+    expect(
+      last.right - first.left,
+      greaterThan(2280 * 0.6),
+      reason: 'the lanes huddled in ${last.right - first.left} dp of 2280',
+    );
+
+    // And the dish is printed at the large step, not the tablet one.
+    final Finder dish = find.textContaining('Jus').first;
+    expect(
+      (tester.widget<Text>(dish).style?.fontSize ?? 0),
+      greaterThan(KdsScale.bodySize),
+      reason: 'a wall board should not print at counter size',
+    );
+  });
+
   testWidgets('a ticket that ARRIVED FROM THE BORNE shows its dishes', (
     tester,
   ) async {
