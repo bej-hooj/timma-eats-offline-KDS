@@ -122,7 +122,16 @@ abstract final class KdsLane {
     }
     switch (order.status) {
       case PosOrderStatus.pendingPayment:
-        return counter;
+        // ⚠ ECOSYSTEM §25.1 — only a ticket someone pays AT THE COUNTER is
+        // the counter's. The feed returns every branch order, so an app/web
+        // order still waiting for CamPay (`mobile_money`, `pending_payment`)
+        // used to land here, inviting a cashier to collect cash for an order
+        // the customer was paying on their phone. It is nobody's ticket until
+        // the payment confirms; it then arrives as `placed` → Nouvelles.
+        // Mirrors `PosStore.counterLane()`, the engine's own definition.
+        return order.paymentMethod == PosPaymentMethod.payAtCounter
+            ? counter
+            : null;
       case PosOrderStatus.placed:
         // See [scheduled]: with no fire time on PosOrder there is nothing to
         // compare `now` against, so every placed ticket reads as immediate.

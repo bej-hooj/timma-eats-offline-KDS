@@ -18,15 +18,17 @@ void main() {
     String paymentStatus = PosPaymentStatus.unpaid,
     DateTime? placedAt,
     String clientId = 'c1',
+    String source = PosOrderSource.kiosk,
+    String paymentMethod = PosPaymentMethod.payAtCounter,
   }) => PosOrder(
     clientId: clientId,
     branchId: 'b1',
     origin: PosOrderOrigin.local,
-    source: PosOrderSource.kiosk,
+    source: source,
     mode: mode,
     status: status,
     paymentStatus: paymentStatus,
-    paymentMethod: PosPaymentMethod.payAtCounter,
+    paymentMethod: paymentMethod,
     deviceSeq: 1,
     subtotal: 3500,
     discount: 0,
@@ -139,6 +141,53 @@ void main() {
         KdsLane.laneFor(order(status: PosOrderStatus.pendingPayment)),
         KdsLane.counter,
         reason: 'the counter lane is what releases tickets to the kitchen',
+      );
+    });
+
+    // ECOSYSTEM §25.1 — the feed returns every branch order; an online order
+    // still waiting for CamPay is not the counter's and not the kitchen's.
+    test('an online order awaiting mobile money has NO lane', () {
+      for (final String source in <String>[
+        PosOrderSource.app,
+        PosOrderSource.web,
+      ]) {
+        expect(
+          KdsLane.laneFor(
+            order(
+              status: PosOrderStatus.pendingPayment,
+              source: source,
+              paymentMethod: PosPaymentMethod.mobileMoney,
+            ),
+          ),
+          isNull,
+          reason: 'a cashier must never collect cash for a CamPay order',
+        );
+      }
+    });
+
+    test('a paid online order lands in Nouvelles', () {
+      expect(
+        KdsLane.laneFor(
+          order(
+            status: PosOrderStatus.placed,
+            source: PosOrderSource.app,
+            paymentMethod: PosPaymentMethod.mobileMoney,
+            paymentStatus: PosPaymentStatus.paid,
+          ),
+        ),
+        KdsLane.newTickets,
+      );
+    });
+
+    test('a web dine-in pay-at-counter order is still the counter\'s', () {
+      expect(
+        KdsLane.laneFor(
+          order(
+            status: PosOrderStatus.pendingPayment,
+            source: PosOrderSource.web,
+          ),
+        ),
+        KdsLane.counter,
       );
     });
 
