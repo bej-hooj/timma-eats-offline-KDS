@@ -188,3 +188,34 @@ Détails techniques : `docs/tv-salle-windows-hdmi-2026-11-27.md`.
 Bon à savoir : double-cliquer une deuxième fois sur une icône ne lance pas une
 deuxième copie, ça remet la fenêtre déjà ouverte devant. Si la télé est
 allumée après le PC, la fenêtre revient d'elle-même sur la télé.
+
+---
+
+## 6 · L'écran cuisine sur la deuxième télé LG (S6-B, 1.0.4+2015)
+
+Le portable pilote **3 écrans** : son écran = la **caisse** (« Caisse
+paiement »), la télé avant en HDMI = l'**écran salle**, la télé arrière en
+**VGA** = l'**écran cuisine** (le kanban Nouvelles → En préparation → Prêtes,
+en grand, **lecture seule**). Les cuisiniers agissent sur la **tablette
+Android** (« Cuisine ») ; la télé arrière suit en 2–3 secondes.
+Détails : `docs/ecran-cuisine-tv-vga-2026-11-27.md`.
+
+1. **Test gratuit d'abord** : télé arrière en VGA (même câble court), télé
+   avant toujours en HDMI → Paramètres → Système → Affichage : **3 écrans** →
+   écran 3 « **Étendre ces affichages** ». Télé arrière : entrée **PC / RGB**.
+2. Acheter : câble **VGA 15 m** avec ferrites, câble **jack 3,5 mm 15 m**,
+   **carte son USB**.
+3. Carte son USB sur le portable ; jack 15 m de la carte son → **PC Audio In**
+   de la télé arrière. Son Windows : sortie par défaut = **haut-parleurs du
+   portable** (la caisse).
+4. Télé arrière en 1920 × 1080 (ou la meilleure proposée en VGA), mise à
+   l'échelle **150 %**.
+5. Installer la nouvelle `TIMMA-Cuisine-Setup.exe` en cochant **« Icône TIMMA
+   Écran cuisine »** + **« Lancer l'écran cuisine au démarrage »**.
+6. Ouvrir **TIMMA Écran cuisine** → appairer sur la borne (une fois).
+7. Sur la télé arrière, **F2** → **Écran** : la télé arrière ; **Sortie son** :
+   la carte son USB → **Tester l'alarme** → Fermer.
+8. Sur le portable, TIMMA Cuisine → « Changer de vue » → **Caisse paiement**.
+   La tablette Android reste sur **Cuisine**.
+9. Si un écran s'est ouvert sur la mauvaise télé : **F2** sur cette fenêtre →
+   **Écran** → la bonne télé (le choix est gardé).
