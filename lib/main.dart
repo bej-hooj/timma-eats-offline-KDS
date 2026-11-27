@@ -10,7 +10,13 @@ import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kds/design/time_util.dart';
 import 'package:timma_kds/launch/kds_surface.dart';
+import 'package:timma_kds/kitchen_tv/kitchen_tv_root.dart';
+import 'package:timma_kds/kitchen_tv/output_alarm_sink.dart';
 import 'package:timma_kds/tv/presentation/tv_root.dart';
+import 'package:timma_kds/tv/state/tv_providers.dart';
+import 'package:timma_kds/tv/state/tv_settings_controller.dart';
+import 'kds/access/kds_view.dart';
+import 'kds/access/kds_view_controller.dart';
 import 'kds/audio/kds_alarm_sink.dart';
 import 'kds/kds_root.dart';
 import 'kds/link/kds_link.dart';
@@ -76,6 +82,10 @@ Future<void> main(List<String> args) async {
   final PosStore store = SqlitePosStore.open(
     '${dir.path}/${KdsSurfaceArgs.storeFileName(surface)}',
   );
+  // The Écran cuisine is always the « Cuisine » view — no picker on a TV.
+  if (surface == KdsSurface.kitchenTv) {
+    store.writeMeta(KdsViewController.metaKey, KdsView.kitchen);
+  }
 
   // **An unpaired tablet has no identity, and that is not a crash** — and it is
   // no longer a dead end either. The store is opened and handed to the app
@@ -97,6 +107,18 @@ Future<void> main(List<String> args) async {
         // The TV never rings the kitchen alarm: the cooks hear it on the PC.
         if (surface == KdsSurface.tv)
           kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
+        // The Écran cuisine mirrors the tablet (no action) and rings the
+        // kitchen alarm on the output chosen with F2 — the back TV.
+        if (surface == KdsSurface.kitchenTv) ...[
+          kdsReadOnlyProvider.overrideWithValue(true),
+          if (Platform.isWindows)
+            kdsAlarmSinkProvider.overrideWith(
+              (Ref ref) => OutputAlarmSink(
+                port: ref.read(tvSpeechProvider),
+                outputId: () => ref.read(tvSettingsProvider).outputId,
+              ),
+            ),
+        ],
       ],
       child: _BoardWithLink(surface: surface),
     ),
@@ -136,6 +158,9 @@ class _BoardWithLinkState extends ConsumerState<_BoardWithLink> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      widget.surface == KdsSurface.tv ? const TvRoot() : const KdsRoot();
+  Widget build(BuildContext context) => switch (widget.surface) {
+    KdsSurface.tv => const TvRoot(),
+    KdsSurface.kitchenTv => const KitchenTvRoot(),
+    KdsSurface.kitchen => const KdsRoot(),
+  };
 }

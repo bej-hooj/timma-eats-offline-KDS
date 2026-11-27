@@ -320,4 +320,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String tvSayRepeat(String code) {
     return 'Je répète : $code';
   }
+
+  @override
+  String get kitchenTvTitle => 'TIMMA Écran cuisine';
+
+  @override
+  String get kitchenTvSettingsTitle => 'Réglages de l\'écran cuisine';
+
+  @override
+  String get kitchenTvTestAlarm => 'Tester l\'alarme';
+
+  @override
+  String get kitchenTvQuit => 'Quitter l\'écran cuisine';
+
+  @override
+  String get displaySettingsMonitor => 'Écran (choisir la télé)';
+
+  @override
+  String get displaySettingsDefaultMonitor => 'Automatique';
+
+  @override
+  String get displaySettingsMainMonitorSuffix => '(écran principal)';
 }

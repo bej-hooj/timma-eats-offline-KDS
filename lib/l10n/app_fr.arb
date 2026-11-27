@@ -241,5 +241,33 @@
         "type": "String"
       }
     }
+  },
+  "kitchenTvTitle": "TIMMA Écran cuisine",
+  "@kitchenTvTitle": {
+    "description": "Window/app title of the kitchen TV."
+  },
+  "kitchenTvSettingsTitle": "Réglages de l'écran cuisine",
+  "@kitchenTvSettingsTitle": {
+    "description": "Settings dialog title (F2) on the kitchen TV."
+  },
+  "kitchenTvTestAlarm": "Tester l'alarme",
+  "@kitchenTvTestAlarm": {
+    "description": "Button that rings the kitchen alarm once."
+  },
+  "kitchenTvQuit": "Quitter l'écran cuisine",
+  "@kitchenTvQuit": {
+    "description": "Closes the kitchen TV application."
+  },
+  "displaySettingsMonitor": "Écran (choisir la télé)",
+  "@displaySettingsMonitor": {
+    "description": "Label of the monitor picker."
+  },
+  "displaySettingsDefaultMonitor": "Automatique",
+  "@displaySettingsDefaultMonitor": {
+    "description": "Monitor option: the surface's default screen."
+  },
+  "displaySettingsMainMonitorSuffix": "(écran principal)",
+  "@displaySettingsMainMonitorSuffix": {
+    "description": "Appended to the laptop's own screen in the monitor picker."
   }
 }

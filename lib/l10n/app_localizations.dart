@@ -637,6 +637,48 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Je répète : {code}'**
   String tvSayRepeat(String code);
+
+  /// Window/app title of the kitchen TV.
+  ///
+  /// In fr, this message translates to:
+  /// **'TIMMA Écran cuisine'**
+  String get kitchenTvTitle;
+
+  /// Settings dialog title (F2) on the kitchen TV.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réglages de l\'écran cuisine'**
+  String get kitchenTvSettingsTitle;
+
+  /// Button that rings the kitchen alarm once.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tester l\'alarme'**
+  String get kitchenTvTestAlarm;
+
+  /// Closes the kitchen TV application.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter l\'écran cuisine'**
+  String get kitchenTvQuit;
+
+  /// Label of the monitor picker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écran (choisir la télé)'**
+  String get displaySettingsMonitor;
+
+  /// Monitor option: the surface's default screen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique'**
+  String get displaySettingsDefaultMonitor;
+
+  /// Appended to the laptop's own screen in the monitor picker.
+  ///
+  /// In fr, this message translates to:
+  /// **'(écran principal)'**
+  String get displaySettingsMainMonitorSuffix;
 }
 
 class _AppLocalizationsDelegate

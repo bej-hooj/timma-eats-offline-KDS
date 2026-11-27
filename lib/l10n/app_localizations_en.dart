@@ -319,4 +319,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String tvSayRepeat(String code) {
     return 'Once again: $code';
   }
+
+  @override
+  String get kitchenTvTitle => 'TIMMA kitchen screen';
+
+  @override
+  String get kitchenTvSettingsTitle => 'Kitchen screen settings';
+
+  @override
+  String get kitchenTvTestAlarm => 'Test the alarm';
+
+  @override
+  String get kitchenTvQuit => 'Quit the kitchen screen';
+
+  @override
+  String get displaySettingsMonitor => 'Screen (choose the TV)';
+
+  @override
+  String get displaySettingsDefaultMonitor => 'Automatic';
+
+  @override
+  String get displaySettingsMainMonitorSuffix => '(main screen)';
 }

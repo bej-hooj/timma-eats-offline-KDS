@@ -143,5 +143,12 @@
   "tvSayReady": "Order {code} is ready.",
   "tvSayLine": "{quantity} {name}",
   "tvSettingsTestPhrase": "Order {code} is ready. Once again: {code}",
-  "tvSayRepeat": "Once again: {code}"
+  "tvSayRepeat": "Once again: {code}",
+  "kitchenTvTitle": "TIMMA kitchen screen",
+  "kitchenTvSettingsTitle": "Kitchen screen settings",
+  "kitchenTvTestAlarm": "Test the alarm",
+  "kitchenTvQuit": "Quit the kitchen screen",
+  "displaySettingsMonitor": "Screen (choose the TV)",
+  "displaySettingsDefaultMonitor": "Automatic",
+  "displaySettingsMainMonitorSuffix": "(main screen)"
 }
