@@ -1,6 +1,6 @@
 # S6-B · « Écran cuisine » — the kitchen kanban on a second LG TV (VGA) — 2026-11-27
 
-> **Status (2026-11-27 late): B0–B7 BUILT and pushed on `feat/ecran-cuisine-2026-11-27` (`3610c79`), 172 tests green. IN FLIGHT: B8 — the macOS preview of KitchenTvRoot showed a BLACK window (cause not yet found); Windows CI run 46025232361 started.** The §8 stage table is the only status
+> **Status (2026-11-27 late): B0–B7 BUILT and pushed on `feat/ecran-cuisine-2026-11-27` (`3610c79`), 172 tests green. B8: macOS visual check DONE (the black window was the preview fixture's duplicate line_no, not app code — board shows Nouvelles/En préparation/Prêtes read-only, no action/switch/mute). Windows CI run 46025232361 pending.** The §8 stage table is the only status
 > source. Companion of `docs/tv-salle-windows-hdmi-2026-11-27.md` (S6, the
 > dining-room TV — BUILT, proven on the HDMI TV by the owner 2026-11-27).
 > Canon: `timmaeat-webapp/ECOSYSTEM.md` §25.3-b.
