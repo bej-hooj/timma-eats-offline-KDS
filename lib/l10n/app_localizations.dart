@@ -511,6 +511,126 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Changer de vue'**
   String get kdsSwitchView;
+
+  /// Window/app title of the dining-room TV.
+  ///
+  /// In fr, this message translates to:
+  /// **'TIMMA Écran salle'**
+  String get tvTitle;
+
+  /// TV column: orders being cooked.
+  ///
+  /// In fr, this message translates to:
+  /// **'En préparation'**
+  String get tvColumnPreparing;
+
+  /// TV column: orders ready at the counter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prêt — à récupérer'**
+  String get tvColumnReady;
+
+  /// Shown in the ready column when it is empty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre numéro s\'affichera ici'**
+  String get tvEmptyReady;
+
+  /// Shown in the preparing column when it is empty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune commande en cours'**
+  String get tvEmptyPreparing;
+
+  /// Badge when the TV has lost the borne.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne'**
+  String get tvOffline;
+
+  /// Settings dialog title (F2).
+  ///
+  /// In fr, this message translates to:
+  /// **'Réglages de l\'écran salle'**
+  String get tvSettingsTitle;
+
+  /// Label of the audio output picker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sortie son (choisir la télé)'**
+  String get tvSettingsOutput;
+
+  /// Label of the voice picker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix'**
+  String get tvSettingsVoice;
+
+  /// Button that speaks a sample sentence.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tester la voix'**
+  String get tvSettingsTest;
+
+  /// Audio output option meaning the system default.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sortie par défaut de Windows'**
+  String get tvSettingsDefaultOutput;
+
+  /// Voice option meaning the system default.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voix par défaut'**
+  String get tvSettingsDefaultVoice;
+
+  /// Warning when no fr voice exists.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune voix française installée — voir le guide.'**
+  String get tvSettingsNoFrenchVoice;
+
+  /// Closes the settings dialog.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get tvSettingsClose;
+
+  /// Closes the TV application.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quitter l\'écran salle'**
+  String get tvSettingsQuit;
+
+  /// Help line in the settings dialog.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appuyez sur F2 pour ouvrir les réglages'**
+  String get tvSettingsHint;
+
+  /// Spoken when a number enters the preparing column. code = spelled ticket code.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commande {code}, en préparation.'**
+  String tvSayPreparing(String code);
+
+  /// Spoken when a number becomes ready.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commande {code}, est prête.'**
+  String tvSayReady(String code);
+
+  /// One spoken line of a ready order.
+  ///
+  /// In fr, this message translates to:
+  /// **'{quantity} {name}'**
+  String tvSayLine(int quantity, String name);
+
+  /// Sample spoken by the test button.
+  ///
+  /// In fr, this message translates to:
+  /// **'Commande {code}, est prête.'**
+  String tvSettingsTestPhrase(String code);
 }
 
 class _AppLocalizationsDelegate

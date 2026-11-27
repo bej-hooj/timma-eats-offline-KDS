@@ -129,5 +129,108 @@
   "kdsViewKitchenHint": "Nouvelles → En préparation → Prêtes",
   "kdsViewCashier": "Caisse paiement",
   "kdsViewCashierHint": "Tickets borne à encaisser",
-  "kdsSwitchView": "Changer de vue"
+  "kdsSwitchView": "Changer de vue",
+  "tvTitle": "TIMMA Écran salle",
+  "@tvTitle": {
+    "description": "Window/app title of the dining-room TV."
+  },
+  "tvColumnPreparing": "En préparation",
+  "@tvColumnPreparing": {
+    "description": "TV column: orders being cooked."
+  },
+  "tvColumnReady": "Prêt — à récupérer",
+  "@tvColumnReady": {
+    "description": "TV column: orders ready at the counter."
+  },
+  "tvEmptyReady": "Votre numéro s'affichera ici",
+  "@tvEmptyReady": {
+    "description": "Shown in the ready column when it is empty."
+  },
+  "tvEmptyPreparing": "Aucune commande en cours",
+  "@tvEmptyPreparing": {
+    "description": "Shown in the preparing column when it is empty."
+  },
+  "tvOffline": "Hors ligne",
+  "@tvOffline": {
+    "description": "Badge when the TV has lost the borne."
+  },
+  "tvSettingsTitle": "Réglages de l'écran salle",
+  "@tvSettingsTitle": {
+    "description": "Settings dialog title (F2)."
+  },
+  "tvSettingsOutput": "Sortie son (choisir la télé)",
+  "@tvSettingsOutput": {
+    "description": "Label of the audio output picker."
+  },
+  "tvSettingsVoice": "Voix",
+  "@tvSettingsVoice": {
+    "description": "Label of the voice picker."
+  },
+  "tvSettingsTest": "Tester la voix",
+  "@tvSettingsTest": {
+    "description": "Button that speaks a sample sentence."
+  },
+  "tvSettingsDefaultOutput": "Sortie par défaut de Windows",
+  "@tvSettingsDefaultOutput": {
+    "description": "Audio output option meaning the system default."
+  },
+  "tvSettingsDefaultVoice": "Voix par défaut",
+  "@tvSettingsDefaultVoice": {
+    "description": "Voice option meaning the system default."
+  },
+  "tvSettingsNoFrenchVoice": "Aucune voix française installée — voir le guide.",
+  "@tvSettingsNoFrenchVoice": {
+    "description": "Warning when no fr voice exists."
+  },
+  "tvSettingsClose": "Fermer",
+  "@tvSettingsClose": {
+    "description": "Closes the settings dialog."
+  },
+  "tvSettingsQuit": "Quitter l'écran salle",
+  "@tvSettingsQuit": {
+    "description": "Closes the TV application."
+  },
+  "tvSettingsHint": "Appuyez sur F2 pour ouvrir les réglages",
+  "@tvSettingsHint": {
+    "description": "Help line in the settings dialog."
+  },
+  "tvSayPreparing": "Commande {code}, en préparation.",
+  "@tvSayPreparing": {
+    "description": "Spoken when a number enters the preparing column. code = spelled ticket code.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "tvSayReady": "Commande {code}, est prête.",
+  "@tvSayReady": {
+    "description": "Spoken when a number becomes ready.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "tvSayLine": "{quantity} {name}",
+  "@tvSayLine": {
+    "description": "One spoken line of a ready order.",
+    "placeholders": {
+      "quantity": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tvSettingsTestPhrase": "Commande {code}, est prête.",
+  "@tvSettingsTestPhrase": {
+    "description": "Sample spoken by the test button.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  }
 }

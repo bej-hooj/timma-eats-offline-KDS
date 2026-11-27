@@ -9,6 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pos_core/pos_core.dart';
 
 import 'package:timma_kds/design/time_util.dart';
+import 'package:timma_kds/launch/kds_surface.dart';
+import 'package:timma_kds/tv/presentation/tv_root.dart';
+import 'kds/audio/kds_alarm_sink.dart';
 import 'kds/kds_root.dart';
 import 'kds/link/kds_link.dart';
 import 'kds/state/kds_board.dart';
@@ -51,7 +54,11 @@ void _swallowUnreachableHubErrors() {
 /// Like the kiosk it initialises neither Supabase nor Hive: the KDS reads the
 /// local store the hub feeds over the LAN or the relay, and **never writes
 /// order state to Supabase itself** (§23.2 — one writer, no split-brain).
-Future<void> main() async {
+///
+/// With [KdsSurfaceArgs.tvFlag] the same binary is the dining-room TV (S6):
+/// its own store file, its own pairing, no kitchen alarm, [TvRoot] instead of
+/// [KdsRoot]. Without it, the kitchen board starts exactly as before.
+Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   TimeUtil.init();
   _swallowUnreachableHubErrors();
@@ -65,7 +72,10 @@ Future<void> main() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   final Directory dir = await getApplicationDocumentsDirectory();
-  final PosStore store = SqlitePosStore.open('${dir.path}/kds.db');
+  final KdsSurface surface = KdsSurfaceArgs.parse(args);
+  final PosStore store = SqlitePosStore.open(
+    '${dir.path}/${KdsSurfaceArgs.storeFileName(surface)}',
+  );
 
   // **An unpaired tablet has no identity, and that is not a crash** — and it is
   // no longer a dead end either. The store is opened and handed to the app
@@ -84,8 +94,11 @@ Future<void> main() async {
           (Ref ref) =>
               () => unawaited(ref.read(kdsLinkProvider.notifier).pump()),
         ),
+        // The TV never rings the kitchen alarm: the cooks hear it on the PC.
+        if (surface == KdsSurface.tv)
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
       ],
-      child: const _BoardWithLink(),
+      child: _BoardWithLink(surface: surface),
     ),
   );
 }
@@ -102,7 +115,10 @@ Future<void> main() async {
 /// and a real socket inside a test is a pending timer that fails the suite for
 /// reasons that have nothing to do with the test.
 class _BoardWithLink extends ConsumerStatefulWidget {
-  const _BoardWithLink();
+  const _BoardWithLink({required this.surface});
+
+  /// Kitchen board or dining-room TV — both need the same link to the borne.
+  final KdsSurface surface;
 
   @override
   ConsumerState<_BoardWithLink> createState() => _BoardWithLinkState();
@@ -120,5 +136,6 @@ class _BoardWithLinkState extends ConsumerState<_BoardWithLink> {
   }
 
   @override
-  Widget build(BuildContext context) => const KdsRoot();
+  Widget build(BuildContext context) =>
+      widget.surface == KdsSurface.tv ? const TvRoot() : const KdsRoot();
 }

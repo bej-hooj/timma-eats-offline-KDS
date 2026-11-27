@@ -246,4 +246,73 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get kdsSwitchView => 'Changer de vue';
+
+  @override
+  String get tvTitle => 'TIMMA Écran salle';
+
+  @override
+  String get tvColumnPreparing => 'En préparation';
+
+  @override
+  String get tvColumnReady => 'Prêt — à récupérer';
+
+  @override
+  String get tvEmptyReady => 'Votre numéro s\'affichera ici';
+
+  @override
+  String get tvEmptyPreparing => 'Aucune commande en cours';
+
+  @override
+  String get tvOffline => 'Hors ligne';
+
+  @override
+  String get tvSettingsTitle => 'Réglages de l\'écran salle';
+
+  @override
+  String get tvSettingsOutput => 'Sortie son (choisir la télé)';
+
+  @override
+  String get tvSettingsVoice => 'Voix';
+
+  @override
+  String get tvSettingsTest => 'Tester la voix';
+
+  @override
+  String get tvSettingsDefaultOutput => 'Sortie par défaut de Windows';
+
+  @override
+  String get tvSettingsDefaultVoice => 'Voix par défaut';
+
+  @override
+  String get tvSettingsNoFrenchVoice =>
+      'Aucune voix française installée — voir le guide.';
+
+  @override
+  String get tvSettingsClose => 'Fermer';
+
+  @override
+  String get tvSettingsQuit => 'Quitter l\'écran salle';
+
+  @override
+  String get tvSettingsHint => 'Appuyez sur F2 pour ouvrir les réglages';
+
+  @override
+  String tvSayPreparing(String code) {
+    return 'Commande $code, en préparation.';
+  }
+
+  @override
+  String tvSayReady(String code) {
+    return 'Commande $code, est prête.';
+  }
+
+  @override
+  String tvSayLine(int quantity, String name) {
+    return '$quantity $name';
+  }
+
+  @override
+  String tvSettingsTestPhrase(String code) {
+    return 'Commande $code, est prête.';
+  }
 }

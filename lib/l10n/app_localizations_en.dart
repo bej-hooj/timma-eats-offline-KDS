@@ -245,4 +245,73 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get kdsSwitchView => 'Switch view';
+
+  @override
+  String get tvTitle => 'TIMMA dining-room screen';
+
+  @override
+  String get tvColumnPreparing => 'Preparing';
+
+  @override
+  String get tvColumnReady => 'Ready — please collect';
+
+  @override
+  String get tvEmptyReady => 'Your number will appear here';
+
+  @override
+  String get tvEmptyPreparing => 'No order in progress';
+
+  @override
+  String get tvOffline => 'Offline';
+
+  @override
+  String get tvSettingsTitle => 'Dining-room screen settings';
+
+  @override
+  String get tvSettingsOutput => 'Sound output (choose the TV)';
+
+  @override
+  String get tvSettingsVoice => 'Voice';
+
+  @override
+  String get tvSettingsTest => 'Test the voice';
+
+  @override
+  String get tvSettingsDefaultOutput => 'Windows default output';
+
+  @override
+  String get tvSettingsDefaultVoice => 'Default voice';
+
+  @override
+  String get tvSettingsNoFrenchVoice =>
+      'No French voice installed — see the guide.';
+
+  @override
+  String get tvSettingsClose => 'Close';
+
+  @override
+  String get tvSettingsQuit => 'Quit the dining-room screen';
+
+  @override
+  String get tvSettingsHint => 'Press F2 to open the settings';
+
+  @override
+  String tvSayPreparing(String code) {
+    return 'Order $code, being prepared.';
+  }
+
+  @override
+  String tvSayReady(String code) {
+    return 'Order $code is ready.';
+  }
+
+  @override
+  String tvSayLine(int quantity, String name) {
+    return '$quantity $name';
+  }
+
+  @override
+  String tvSettingsTestPhrase(String code) {
+    return 'Order $code is ready.';
+  }
 }
