@@ -139,8 +139,9 @@
   "tvSettingsClose": "Close",
   "tvSettingsQuit": "Quit the dining-room screen",
   "tvSettingsHint": "Press F2 to open the settings",
-  "tvSayPreparing": "Order {code}, being prepared.",
+  "tvSayPreparing": "Order {code} being prepared.",
   "tvSayReady": "Order {code} is ready.",
   "tvSayLine": "{quantity} {name}",
-  "tvSettingsTestPhrase": "Order {code} is ready."
+  "tvSettingsTestPhrase": "Order {code} is ready. Once again: {code}",
+  "tvSayRepeat": "Once again: {code}"
 }

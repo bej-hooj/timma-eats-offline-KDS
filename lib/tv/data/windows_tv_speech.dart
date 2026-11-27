@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../domain/tv_rules.dart';
 import '../domain/tv_utterance.dart';
 import '../ports/tv_speech.dart';
 
@@ -54,6 +55,7 @@ class WindowsTvSpeech implements TvSpeech {
         'chime': utterance.chime,
         'outputId': outputId,
         'voiceId': voiceId,
+        'rate': TvRules.speakingRate,
       });
     } on PlatformException catch (e) {
       debugPrint('[TvSpeech] say failed: ${e.code}');

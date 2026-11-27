@@ -26,6 +26,7 @@ final Provider<TvPhrases> tvPhrasesProvider = Provider<TvPhrases>((Ref ref) {
     preparing: l10n.tvSayPreparing,
     ready: l10n.tvSayReady,
     line: l10n.tvSayLine,
+    repeat: l10n.tvSayRepeat,
   );
 });
 

@@ -27,7 +27,7 @@ void main() {
   test('a new ticket is announced once, then silence on re-reads', () {
     step(const <PosOrder>[], t0);
     final List<TvUtterance> first = step(<PosOrder>[order('a', number: 7)], t0);
-    expect(first.single.text, 'Commande 0, 7, en préparation.');
+    expect(first.single.text, 'Commande 0. 7. en préparation.');
     expect(first.single.priority, TvUtterancePriority.preparing);
     expect(first.single.chime, isFalse);
     expect(step(<PosOrder>[order('a', number: 7)], t0.add(const Duration(seconds: 2))), isEmpty);
@@ -38,7 +38,7 @@ void main() {
     final DateTime t1 = t0.add(const Duration(minutes: 5));
     final List<PosOrder> ready = <PosOrder>[order('a', number: 7, status: PosOrderStatus.ready, changed: t1)];
     final List<TvUtterance> said = step(ready, t1);
-    expect(said.single.text, 'Commande 0, 7, est prête. 2 Ndolé.');
+    expect(said.single.text, 'Commande 0. 7. est prête. 2 Ndolé. Je répète : 0. 7.');
     expect(said.single.chime, isTrue);
     expect(step(ready, t1.add(const Duration(seconds: 2))), isEmpty);
   });
@@ -61,9 +61,9 @@ void main() {
         ...step(ready, t0.add(Duration(seconds: 1) + TvRules.rotationEvery * i)).map((TvUtterance u) => u.text),
     ];
     expect(rotated, <String>[
-      'Commande 0, 2, est prête. 2 Ndolé.',
-      'Commande 0, 1, est prête. 2 Ndolé.',
-      'Commande 0, 2, est prête. 2 Ndolé.',
+      'Commande 0. 2. est prête. 2 Ndolé. Je répète : 0. 2.',
+      'Commande 0. 1. est prête. 2 Ndolé. Je répète : 0. 1.',
+      'Commande 0. 2. est prête. 2 Ndolé. Je répète : 0. 2.',
     ]);
   });
 

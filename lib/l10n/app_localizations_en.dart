@@ -297,7 +297,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tvSayPreparing(String code) {
-    return 'Order $code, being prepared.';
+    return 'Order $code being prepared.';
   }
 
   @override
@@ -312,6 +312,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tvSettingsTestPhrase(String code) {
-    return 'Order $code is ready.';
+    return 'Order $code is ready. Once again: $code';
+  }
+
+  @override
+  String tvSayRepeat(String code) {
+    return 'Once again: $code';
   }
 }

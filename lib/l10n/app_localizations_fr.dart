@@ -298,12 +298,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String tvSayPreparing(String code) {
-    return 'Commande $code, en préparation.';
+    return 'Commande $code en préparation.';
   }
 
   @override
   String tvSayReady(String code) {
-    return 'Commande $code, est prête.';
+    return 'Commande $code est prête.';
   }
 
   @override
@@ -313,6 +313,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String tvSettingsTestPhrase(String code) {
-    return 'Commande $code, est prête.';
+    return 'Commande $code est prête. Je répète : $code';
+  }
+
+  @override
+  String tvSayRepeat(String code) {
+    return 'Je répète : $code';
   }
 }

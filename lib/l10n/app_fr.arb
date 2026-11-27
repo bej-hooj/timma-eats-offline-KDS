@@ -194,7 +194,7 @@
   "@tvSettingsHint": {
     "description": "Help line in the settings dialog."
   },
-  "tvSayPreparing": "Commande {code}, en préparation.",
+  "tvSayPreparing": "Commande {code} en préparation.",
   "@tvSayPreparing": {
     "description": "Spoken when a number enters the preparing column. code = spelled ticket code.",
     "placeholders": {
@@ -203,7 +203,7 @@
       }
     }
   },
-  "tvSayReady": "Commande {code}, est prête.",
+  "tvSayReady": "Commande {code} est prête.",
   "@tvSayReady": {
     "description": "Spoken when a number becomes ready.",
     "placeholders": {
@@ -224,9 +224,18 @@
       }
     }
   },
-  "tvSettingsTestPhrase": "Commande {code}, est prête.",
+  "tvSettingsTestPhrase": "Commande {code} est prête. Je répète : {code}",
   "@tvSettingsTestPhrase": {
     "description": "Sample spoken by the test button.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "tvSayRepeat": "Je répète : {code}",
+  "@tvSayRepeat": {
+    "description": "Said at the end of a ready announcement: the code once more.",
     "placeholders": {
       "code": {
         "type": "String"

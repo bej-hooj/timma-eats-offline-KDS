@@ -40,6 +40,11 @@ abstract final class TvRules {
   /// Longest text the native speech channel accepts (it enforces it too).
   static const int maxSpeechChars = 500;
 
+  /// Speaking speed, 1.0 = the voice's normal pace. Slower so a ticket code
+  /// is understood across a noisy dining room (owner, 2026-11-27: « pas
+  /// clair »). The native channel accepts 0.5–1.5.
+  static const double speakingRate = 0.85;
+
   /// The mouse cursor hides after this long without movement.
   static const Duration cursorHideAfter = Duration(seconds: 3);
 }

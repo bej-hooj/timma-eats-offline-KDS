@@ -6,6 +6,7 @@ class TvPhrases {
     required this.preparing,
     required this.ready,
     required this.line,
+    required this.repeat,
   });
 
   /// « Commande {code}, en préparation. »
@@ -16,4 +17,7 @@ class TvPhrases {
 
   /// « {quantity} {name} »
   final String Function(int quantity, String name) line;
+
+  /// « Je répète : {code} »
+  final String Function(String code) repeat;
 }

@@ -611,13 +611,13 @@ abstract class AppLocalizations {
   /// Spoken when a number enters the preparing column. code = spelled ticket code.
   ///
   /// In fr, this message translates to:
-  /// **'Commande {code}, en préparation.'**
+  /// **'Commande {code} en préparation.'**
   String tvSayPreparing(String code);
 
   /// Spoken when a number becomes ready.
   ///
   /// In fr, this message translates to:
-  /// **'Commande {code}, est prête.'**
+  /// **'Commande {code} est prête.'**
   String tvSayReady(String code);
 
   /// One spoken line of a ready order.
@@ -629,8 +629,14 @@ abstract class AppLocalizations {
   /// Sample spoken by the test button.
   ///
   /// In fr, this message translates to:
-  /// **'Commande {code}, est prête.'**
+  /// **'Commande {code} est prête. Je répète : {code}'**
   String tvSettingsTestPhrase(String code);
+
+  /// Said at the end of a ready announcement: the code once more.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je répète : {code}'**
+  String tvSayRepeat(String code);
 }
 
 class _AppLocalizationsDelegate

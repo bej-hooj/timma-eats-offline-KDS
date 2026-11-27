@@ -47,6 +47,19 @@ const std::string* StringArg(const EncodableMap& args, const char* key) {
   return std::get_if<std::string>(&it->second);
 }
 
+// The speaking rate the app asked for, clamped to what the synthesizer takes.
+double RateArg(const EncodableMap& args) {
+  auto it = args.find(EncodableValue("rate"));
+  if (it == args.end()) {
+    return 1.0;
+  }
+  const double* value = std::get_if<double>(&it->second);
+  if (value == nullptr) {
+    return 1.0;
+  }
+  return *value < 0.5 ? 0.5 : (*value > 1.5 ? 1.5 : *value);
+}
+
 bool BoolArg(const EncodableMap& args, const char* key) {
   auto it = args.find(EncodableValue(key));
   if (it == args.end()) {
@@ -125,14 +138,22 @@ wms::VoiceInformation PickVoice(const std::string* id) {
       }
     }
   }
-  // Default: the first French voice — the TV speaks the restaurant's language.
+  // Default: a French WOMAN's voice (owner, 2026-11-27) — Hortense / Julie on
+  // a French Windows; any French voice if no female one is installed.
+  wms::VoiceInformation any_french = nullptr;
   for (const auto& v : voices) {
     const std::wstring lang(v.Language().c_str());
-    if (lang.rfind(L"fr", 0) == 0) {
+    if (lang.rfind(L"fr", 0) != 0) {
+      continue;
+    }
+    if (v.Gender() == wms::VoiceGender::Female) {
       return v;
     }
+    if (any_french == nullptr) {
+      any_french = v;
+    }
   }
-  return nullptr;
+  return any_french;
 }
 
 std::atomic<bool> g_stopping{false};
@@ -225,7 +246,9 @@ void TvSpeechChannel::HandleCall(
     const std::string* voice = StringArg(*args, "voiceId");
     const std::string output_copy = output ? *output : "";
     const std::string voice_copy = voice ? *voice : "";
-    Enqueue(std::move(result), [text_copy, chime, output_copy, voice_copy] {
+    const double rate = RateArg(*args);
+    Enqueue(std::move(result), [text_copy, chime, output_copy, voice_copy,
+                                rate] {
       Outcome out;
       const wde::DeviceInformation device = FindOutput(&output_copy);
       if (chime) {
@@ -244,6 +267,8 @@ void TvSpeechChannel::HandleCall(
       if (picked != nullptr) {
         synth.Voice(picked);
       }
+      // Slower than normal so a ticket code is understood in a noisy room.
+      synth.Options().SpeakingRate(rate);
       const auto stream =
           synth.SynthesizeTextToStreamAsync(winrt::to_hstring(text_copy))
               .get();

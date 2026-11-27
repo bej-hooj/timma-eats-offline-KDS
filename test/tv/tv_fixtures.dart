@@ -45,7 +45,8 @@ PosOrderLine line(String name, int qty, {String? variant}) => PosOrderLine(
 
 /// The French sentences, as the arb defines them.
 final TvPhrases frPhrases = TvPhrases(
-  preparing: (String c) => 'Commande $c, en préparation.',
-  ready: (String c) => 'Commande $c, est prête.',
+  preparing: (String c) => 'Commande $c en préparation.',
+  ready: (String c) => 'Commande $c est prête.',
   line: (int q, String n) => '$q $n',
+  repeat: (String c) => 'Je répète : $c',
 );

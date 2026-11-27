@@ -98,7 +98,7 @@ void main() {
     put(order('r', number: 7, status: PosOrderStatus.ready, changed: now), <PosOrderLine>[line('Ndolé', 2)]);
     await tester.pump(TvRules.refreshEvery);
     await tester.pump();
-    expect(speech.said.map((TvUtterance u) => u.text), <String>['Commande 0, 7, est prête. 2 Ndolé.']);
+    expect(speech.said.map((TvUtterance u) => u.text), <String>['Commande 0. 7. est prête. 2 Ndolé. Je répète : 0. 7.']);
     expect(speech.outputsUsed, <String?>['lg']);
     expect(find.text('07'), findsOneWidget);
     // Three minutes later it is gone.
