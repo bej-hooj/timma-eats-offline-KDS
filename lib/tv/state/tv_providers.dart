@@ -11,6 +11,11 @@ import '../ports/tv_speech.dart';
 import 'tv_settings_controller.dart';
 import 'tv_speech_queue.dart';
 
+/// The TV's clock, UTC. Tests override it to walk time forward.
+final Provider<DateTime Function()> tvClockProvider = Provider<DateTime Function()>(
+  (Ref ref) => () => DateTime.now().toUtc(),
+);
+
 /// The speech port: native on Windows, silent elsewhere. Tests override it.
 final Provider<TvSpeech> tvSpeechProvider = Provider<TvSpeech>(
   (Ref ref) => Platform.isWindows ? WindowsTvSpeech() : SilentTvSpeech(),
@@ -34,6 +39,7 @@ final Provider<TvPhrases> tvPhrasesProvider = Provider<TvPhrases>((Ref ref) {
 final Provider<TvSpeechQueue> tvSpeechQueueProvider = Provider<TvSpeechQueue>((Ref ref) {
   final TvSpeechQueue queue = TvSpeechQueue(
     speech: ref.watch(tvSpeechProvider),
+    clock: ref.read(tvClockProvider),
     target: () {
       final TvSettings s = ref.read(tvSettingsProvider);
       return (outputId: s.outputId, voiceId: s.voiceId);

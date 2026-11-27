@@ -32,6 +32,7 @@ class _GatedSpeech implements TvSpeech {
 
 TvUtterance prep(String t) => TvUtterance(text: t, priority: TvUtterancePriority.preparing);
 TvUtterance ready(String t) => TvUtterance(text: t, priority: TvUtterancePriority.ready, chime: true);
+TvUtterance again(String t) => TvUtterance(text: t, priority: TvUtterancePriority.ready, reread: true);
 
 void main() {
   test('speaks one at a time, in order, to the chosen output', () async {
@@ -45,20 +46,47 @@ void main() {
     expect(port.started, <String>['a@lg', 'b@lg']);
   });
 
-  test('bounded: preparation utterances drop first, ready ones stay', () async {
+  test('a fresh announcement jumps ahead of waiting re-reads', () async {
+    final _GatedSpeech port = _GatedSpeech();
+    final TvSpeechQueue q = TvSpeechQueue(speech: port, target: () => (outputId: null, voiceId: null));
+    q.enqueue(<TvUtterance>[ready('speaking')]);
+    await Future<void>.delayed(Duration.zero);
+    q.enqueue(<TvUtterance>[again('r1'), again('r2')]);
+    q.enqueue(<TvUtterance>[ready('fresh')]);
+    expect(q.pending.map((TvUtterance u) => u.text), <String>['fresh', 'r1', 'r2']);
+  });
+
+  test('bounded: re-reads drop first, then preparation; fresh « prête » stays', () async {
     final _GatedSpeech port = _GatedSpeech();
     final TvSpeechQueue q = TvSpeechQueue(speech: port, target: () => (outputId: null, voiceId: null));
     q.enqueue(<TvUtterance>[ready('speaking')]);
     await Future<void>.delayed(Duration.zero);
     q.enqueue(<TvUtterance>[
+      again('old'),
       prep('p0'),
-      for (int i = 0; i < TvRules.maxQueue - 1; i++) ready('r$i'),
+      for (int i = 0; i < TvRules.maxQueue - 2; i++) ready('r$i'),
       ready('late'),
+      ready('later'),
     ]);
     expect(q.pending, hasLength(TvRules.maxQueue));
+    expect(q.pending.map((TvUtterance u) => u.text), isNot(contains('old')));
     expect(q.pending.map((TvUtterance u) => u.text), isNot(contains('p0')));
-    expect(q.pending.last.text, 'late');
+    expect(q.pending.map((TvUtterance u) => u.text), containsAll(<String>['late', 'later']));
   });
+
+  test('silentFor: null while speaking, measured from when the voice stopped', () async {
+    DateTime now = DateTime.utc(2026, 11, 27, 12);
+    final _GatedSpeech port = _GatedSpeech();
+    final TvSpeechQueue q = TvSpeechQueue(speech: port, target: () => (outputId: null, voiceId: null), clock: () => now);
+    q.enqueue(<TvUtterance>[prep('a')]);
+    expect(q.silentFor(now), isNull);
+    await Future<void>.delayed(Duration.zero);
+    now = now.add(const Duration(seconds: 5));
+    port.gates.single.complete();
+    await Future<void>.delayed(Duration.zero);
+    expect(q.silentFor(now.add(const Duration(seconds: 7))), const Duration(seconds: 7));
+  });
+
 
   test('a failing port does not stop the queue', () async {
     final _GatedSpeech port = _GatedSpeech()..fail = true;

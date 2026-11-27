@@ -18,8 +18,10 @@ abstract final class TvRules {
   /// A number that became ready this recently is drawn highlighted.
   static const Duration highlightFor = Duration(seconds: 10);
 
-  /// While numbers are ready, one of them is re-announced this often, in turn.
-  static const Duration rotationEvery = Duration(seconds: 30);
+  /// Once every new move has been said and the voice has been silent this
+  /// long, the TV re-reads the whole board — « Prêt » first, then « En
+  /// préparation » — and starts again (owner, 2026-11-27).
+  static const Duration cyclePause = Duration(seconds: 20);
 
   /// The TV re-reads its local store this often — a SQLite read, not network.
   static const Duration refreshEvery = Duration(seconds: 2);
@@ -27,8 +29,9 @@ abstract final class TvRules {
   /// Tiles per column. A TV that scrolls is a TV nobody can read.
   static const int maxPerColumn = 12;
 
-  /// Utterances waiting to be spoken; beyond this, preparation ones drop.
-  static const int maxQueue = 10;
+  /// Utterances waiting to be spoken — room for a full re-read of both
+  /// columns plus fresh announcements. Beyond it, re-reads drop first.
+  static const int maxQueue = maxPerColumn * 2 + 6;
 
   /// Longest text the native speech channel accepts (it enforces it too).
   static const int maxSpeechChars = 500;

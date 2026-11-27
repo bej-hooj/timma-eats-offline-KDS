@@ -11,7 +11,6 @@ import 'package:timma_kds/tv/domain/tv_rules.dart';
 import 'package:timma_kds/tv/domain/tv_utterance.dart';
 import 'package:timma_kds/tv/ports/tv_speech.dart';
 import 'package:timma_kds/tv/presentation/tv_app.dart';
-import 'package:timma_kds/tv/state/tv_board_controller.dart';
 import 'package:timma_kds/tv/state/tv_providers.dart';
 import 'package:timma_kds/tv/state/tv_settings_controller.dart';
 

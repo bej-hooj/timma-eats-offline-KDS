@@ -15,9 +15,11 @@ abstract final class TvSpeechText {
       .map((String c) => '$c.')
       .join(' ');
 
-  /// « Commande A. D. 4. 5. en préparation. »
-  static String preparing(TvTicket ticket, TvPhrases phrases) =>
-      _cap(phrases.preparing(spell(ticket.label)));
+  /// « Commande A. D. 4. 5. en préparation. Je répète : A. D. 4. 5. »
+  static String preparing(TvTicket ticket, TvPhrases phrases) {
+    final String code = spell(ticket.label);
+    return _cap('${phrases.preparing(code)} ${phrases.repeat(code)}');
+  }
 
   /// « Commande A. D. 4. 5. est prête. 2 Ndolé, 1 Foléré. Je répète : A. D.
   /// 4. 5. » — every line, then the code once more: the customer who missed

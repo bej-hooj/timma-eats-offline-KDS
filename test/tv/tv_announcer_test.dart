@@ -17,8 +17,9 @@ void main() {
     now: now,
   );
 
-  List<TvUtterance> step(List<PosOrder> orders, DateTime now) =>
-      announcer.next(board(orders, now), now);
+  /// [silent] = how long the voice has been quiet (null = speaking).
+  List<TvUtterance> step(List<PosOrder> orders, DateTime now, {Duration? silent = Duration.zero}) =>
+      announcer.next(board(orders, now), now, silentFor: silent);
 
   test('the first board after launch is silent', () {
     expect(step(<PosOrder>[order('a'), order('b', status: PosOrderStatus.ready)], t0), isEmpty);
@@ -27,7 +28,7 @@ void main() {
   test('a new ticket is announced once, then silence on re-reads', () {
     step(const <PosOrder>[], t0);
     final List<TvUtterance> first = step(<PosOrder>[order('a', number: 7)], t0);
-    expect(first.single.text, 'Commande 0. 7. en préparation.');
+    expect(first.single.text, 'Commande 0. 7. en préparation. Je répète : 0. 7.');
     expect(first.single.priority, TvUtterancePriority.preparing);
     expect(first.single.chime, isFalse);
     expect(step(<PosOrder>[order('a', number: 7)], t0.add(const Duration(seconds: 2))), isEmpty);
@@ -48,29 +49,37 @@ void main() {
     expect(step(<PosOrder>[order('a', status: PosOrderStatus.ready)], t0).single.priority, TvUtterancePriority.ready);
   });
 
-  test('rotation: every 30 s, round-robin over the ready tickets', () {
+  test('re-read cycle: after 20 s of silence, every « Prêt » then every « En préparation »', () {
     step(const <PosOrder>[], t0);
-    final List<PosOrder> ready = <PosOrder>[
+    final List<PosOrder> orders = <PosOrder>[
+      order('p', number: 3, placed: t0),
       order('a', number: 1, status: PosOrderStatus.ready, changed: t0),
       order('b', number: 2, status: PosOrderStatus.ready, changed: t0.add(const Duration(seconds: 1))),
     ];
-    expect(step(ready, t0.add(const Duration(seconds: 1))), hasLength(2));
-    expect(step(ready, t0.add(const Duration(seconds: 20))), isEmpty);
-    final List<String> rotated = <String>[
-      for (int i = 1; i <= 3; i++)
-        ...step(ready, t0.add(Duration(seconds: 1) + TvRules.rotationEvery * i)).map((TvUtterance u) => u.text),
-    ];
-    expect(rotated, <String>[
+    final DateTime t1 = t0.add(const Duration(seconds: 1));
+    expect(step(orders, t1), hasLength(3)); // fresh: 1 preparing + 2 ready
+    // Silent, but not long enough yet; and nothing while still speaking.
+    expect(step(orders, t1, silent: const Duration(seconds: 19)), isEmpty);
+    expect(step(orders, t1, silent: null), isEmpty);
+    final List<TvUtterance> cycle = step(orders, t1, silent: TvRules.cyclePause);
+    expect(cycle.map((TvUtterance u) => u.text), <String>[
       'Commande 0. 2. est prête. 2 Ndolé. Je répète : 0. 2.',
       'Commande 0. 1. est prête. 2 Ndolé. Je répète : 0. 1.',
-      'Commande 0. 2. est prête. 2 Ndolé. Je répète : 0. 2.',
+      'Commande 0. 3. en préparation. Je répète : 0. 3.',
     ]);
+    expect(cycle.every((TvUtterance u) => u.reread && !u.chime), isTrue);
   });
 
-  test('a ticket that left stops rotating; nothing ready means no rotation', () {
+  test('a fresh move wins over the cycle; an empty board has no cycle', () {
     step(const <PosOrder>[], t0);
-    step(<PosOrder>[order('a', status: PosOrderStatus.ready)], t0);
-    expect(step(const <PosOrder>[], t0.add(TvRules.rotationEvery * 3)), isEmpty);
+    step(<PosOrder>[order('p', number: 3)], t0);
+    final List<TvUtterance> said = step(
+      <PosOrder>[order('p', number: 3), order('n', number: 4)],
+      t0,
+      silent: TvRules.cyclePause,
+    );
+    expect(said.single.reread, isFalse);
+    expect(step(const <PosOrder>[], t0, silent: TvRules.cyclePause * 3), isEmpty);
   });
 
   test('a ticket sent back and made ready again is announced again', () {

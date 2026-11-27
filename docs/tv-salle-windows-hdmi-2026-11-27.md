@@ -367,3 +367,19 @@ both start; double-click the icon again → no second window.
 - **Not verifiable here:** the C++ (compiled only on the GitHub runner), the
   voice, the TV monitor placement and the HDMI audio routing — owner checklist
   §10 on the real PC + LG TV.
+
+## 12 · Owner changes, 2026-11-27 (after hearing it)
+
+- **Columns = the KDS lanes.** The TV no longer has its own status list: it
+  calls `KdsLane.laneFor` — TV « En préparation » = KDS « En préparation »
+  (`accepted`/`preparing`), TV « Prêt » = KDS « Prêtes » (3 min on the TV).
+  « Nouvelles » (`placed`) is NOT on the TV (reverses §3's `placed` addition).
+- **Voice clarity:** code spelled with full stops (`A. K. 3.`), repeated at the
+  end of every announcement (« Je répète : A. K. 3. »), rate
+  `TvRules.speakingRate` = 0.85, a French **female** voice by default
+  (WinRT `VoiceGender::Female`).
+- **Re-read cycle replaces the 30-s rotation:** once every fresh move is said
+  and the voice has been silent `TvRules.cyclePause` (20 s), the whole board is
+  read again — « Prêt » newest first, then « En préparation » oldest first, no
+  chime. Fresh announcements are queued AHEAD of re-reads; re-reads drop first
+  when the queue (`maxQueue` = 30) is full.

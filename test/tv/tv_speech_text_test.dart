@@ -16,7 +16,7 @@ void main() {
       TvTicket(clientId: 'c', label: 'AD45', column: TvColumn.ready, since: t0, lines: lines);
 
   test('preparing sentence', () {
-    expect(TvSpeechText.preparing(ticket(), frPhrases), 'Commande A. D. 4. 5. en préparation.');
+    expect(TvSpeechText.preparing(ticket(), frPhrases), 'Commande A. D. 4. 5. en préparation. Je répète : A. D. 4. 5.');
   });
 
   test('ready sentence lists every dish and drink', () {

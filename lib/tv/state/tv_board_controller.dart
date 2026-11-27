@@ -8,6 +8,7 @@ import '../domain/tv_announcer.dart';
 import '../domain/tv_board.dart';
 import '../domain/tv_rules.dart';
 import 'tv_providers.dart';
+import 'tv_speech_queue.dart';
 
 /// What the TV screen draws.
 class TvBoardState {
@@ -47,15 +48,11 @@ class TvBoardController extends Notifier<TvBoardState> {
       linesOf: store.linesOf,
       now: now,
     );
-    ref.read(tvSpeechQueueProvider).enqueue(_announcer!.next(board, now));
+    final TvSpeechQueue queue = ref.read(tvSpeechQueueProvider);
+    queue.enqueue(_announcer!.next(board, now, silentFor: queue.silentFor(now)));
     return TvBoardState(board: board, now: now);
   }
 }
-
-/// The TV's clock, UTC. Tests override it to walk time forward.
-final Provider<DateTime Function()> tvClockProvider = Provider<DateTime Function()>(
-  (Ref ref) => () => DateTime.now().toUtc(),
-);
 
 final NotifierProvider<TvBoardController, TvBoardState> tvBoardProvider =
     NotifierProvider<TvBoardController, TvBoardState>(TvBoardController.new);

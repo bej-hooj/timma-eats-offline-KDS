@@ -6,14 +6,17 @@ import 'tv_ticket.dart';
 import 'tv_utterance.dart';
 
 /// Decides what the TV says, from one board to the next. Pure: the caller
-/// passes the clock.
+/// passes the clock and how long the voice has been silent.
 ///
 /// * The **first** board after launch is *primed* silently — a PC rebooted at
-///   noon must not read the whole board out loud.
+///   noon must not blurt the whole board at once; the re-read cycle covers it
+///   calmly afterwards.
 /// * A ticket is announced once per column it enters (keyed on
 ///   [TvTicket.announceKey]), so a re-sent snapshot or a 2-s re-read is silent.
-/// * While tickets are ready, one of them is re-announced every
-///   [TvRules.rotationEvery], round-robin. A fresh « prête » restarts the wait.
+/// * **Re-read cycle (owner, 2026-11-27):** when nothing new is to be said and
+///   the voice has been silent for [TvRules.cyclePause], the whole board is
+///   read again — every « Prêt » (newest first), then every « En préparation »
+///   (oldest first) — as [TvUtterance.reread] utterances.
 class TvAnnouncer {
   TvAnnouncer({required this.phrases});
 
@@ -21,14 +24,12 @@ class TvAnnouncer {
 
   final Set<String> _heard = <String>{};
   bool _primed = false;
-  DateTime? _lastReadyAnnouncement;
-  int _cursor = 0;
 
   /// Utterances to queue now, in speaking order.
   ///
-  /// Call with every board the controller reads; an unchanged board returns an
-  /// empty list (except when a rotation is due).
-  List<TvUtterance> next(TvBoard board, DateTime now) {
+  /// [silentFor] is how long the speech queue has been idle; null while it is
+  /// speaking (no re-read is started over a voice that is still talking).
+  List<TvUtterance> next(TvBoard board, DateTime now, {Duration? silentFor}) {
     final List<TvTicket> onBoard = <TvTicket>[...board.preparing, ...board.ready];
     // Forget tickets that left, so the set stays bounded over a long service
     // and a ticket sent back to the kitchen is announced again when it returns.
@@ -40,45 +41,45 @@ class TvAnnouncer {
     if (!_primed) {
       _primed = true;
       _heard.addAll(present);
-      _lastReadyAnnouncement = now;
       return const <TvUtterance>[];
     }
 
     final List<TvUtterance> out = <TvUtterance>[];
     for (final TvTicket t in board.preparing) {
       if (_heard.add(t.announceKey)) {
-        out.add(
-          TvUtterance(
-            text: TvSpeechText.preparing(t, phrases),
-            priority: TvUtterancePriority.preparing,
-          ),
-        );
+        out.add(_preparing(t));
       }
     }
-    bool announcedReady = false;
     // Oldest ready first, so two simultaneous ones are said in order.
     for (final TvTicket t in board.ready.reversed) {
       if (_heard.add(t.announceKey)) {
-        announcedReady = true;
         out.add(_ready(t));
       }
     }
-
-    if (announcedReady || board.ready.isEmpty) {
-      _lastReadyAnnouncement = now;
-    } else if (now.difference(_lastReadyAnnouncement ?? now) >=
-        TvRules.rotationEvery) {
-      final TvTicket t = board.ready[_cursor % board.ready.length];
-      _cursor++;
-      _lastReadyAnnouncement = now;
-      out.add(_ready(t));
+    if (out.isNotEmpty) {
+      return out;
     }
-    return out;
+
+    if (onBoard.isEmpty || silentFor == null || silentFor < TvRules.cyclePause) {
+      return const <TvUtterance>[];
+    }
+    return <TvUtterance>[
+      for (final TvTicket t in board.ready) _ready(t, reread: true),
+      for (final TvTicket t in board.preparing) _preparing(t, reread: true),
+    ];
   }
 
-  TvUtterance _ready(TvTicket t) => TvUtterance(
+  TvUtterance _preparing(TvTicket t, {bool reread = false}) => TvUtterance(
+    text: TvSpeechText.preparing(t, phrases),
+    priority: TvUtterancePriority.preparing,
+    reread: reread,
+  );
+
+  /// The chime marks a fresh « prête » only; re-reads are voice alone.
+  TvUtterance _ready(TvTicket t, {bool reread = false}) => TvUtterance(
     text: TvSpeechText.ready(t, phrases),
     priority: TvUtterancePriority.ready,
-    chime: true,
+    chime: !reread,
+    reread: reread,
   );
 }
