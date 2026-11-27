@@ -1,5 +1,7 @@
 import 'package:pos_core/pos_core.dart';
 
+import '../../kds/domain/kds_lanes.dart';
+
 import 'tv_rules.dart';
 import 'tv_ticket.dart';
 
@@ -26,7 +28,8 @@ class TvBoard {
   /// * [now] — UTC; a ready ticket older than [TvRules.readyVisibleFor] is
   ///   dropped.
   ///
-  /// Kiosk orders only; a ticket with no printable number is skipped (a
+  /// A ticket is in « En préparation » / « Prêt » exactly when the KDS shows
+  /// it in its « En préparation » / « Prêtes » lane. Kiosk orders only; a ticket with no printable number is skipped (a
   /// customer cannot match a blank tile to a slip).
   static TvBoard project({
     required List<PosOrder> orders,
@@ -39,9 +42,12 @@ class TvBoard {
       if (order.source != TvRules.source || _labelOf(order).isEmpty) {
         continue;
       }
-      if (TvRules.preparingStatuses.contains(order.status)) {
+      // The kitchen board's own lane rule — one definition, so the TV can
+      // never disagree with what the cooks see.
+      final String? lane = KdsLane.laneFor(order);
+      if (lane == KdsLane.preparing) {
         preparing.add(order);
-      } else if (order.status == TvRules.readyStatus &&
+      } else if (lane == KdsLane.ready &&
           now.difference(order.statusChangedAt) < TvRules.readyVisibleFor) {
         ready.add(order);
       }

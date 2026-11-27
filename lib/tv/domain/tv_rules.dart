@@ -8,16 +8,9 @@ abstract final class TvRules {
   /// Only borne orders: app and web customers follow theirs in the app.
   static const String source = PosOrderSource.kiosk;
 
-  /// « En préparation ». `placed` is included (2026-11-27) so a customer who
-  /// has just paid sees their number at once, before a cook taps it.
-  static const Set<String> preparingStatuses = <String>{
-    PosOrderStatus.placed,
-    PosOrderStatus.accepted,
-    PosOrderStatus.preparing,
-  };
-
-  /// « Prêt — à récupérer ».
-  static const String readyStatus = PosOrderStatus.ready;
+  // Which column a ticket sits in is NOT decided here: the TV reuses the
+  // kitchen board's own rule, `KdsLane.laneFor` (owner, 2026-11-27: the TV
+  // must show exactly what the KDS marks « En préparation » and « Prêtes »).
 
   /// How long a ready number stays on screen (owner: three minutes).
   static const Duration readyVisibleFor = Duration(minutes: 3);

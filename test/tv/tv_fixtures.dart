@@ -6,7 +6,7 @@ final DateTime t0 = DateTime.utc(2026, 11, 27, 12);
 
 PosOrder order(
   String id, {
-  String status = PosOrderStatus.placed,
+  String status = PosOrderStatus.preparing,
   String source = PosOrderSource.kiosk,
   DateTime? placed,
   DateTime? changed,

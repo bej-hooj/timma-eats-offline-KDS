@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
+import 'package:timma_kds/kds/domain/kds_lanes.dart';
 import 'package:timma_kds/tv/domain/tv_board.dart';
 import 'package:timma_kds/tv/domain/tv_rules.dart';
 import 'package:timma_kds/tv/domain/tv_ticket.dart';
@@ -23,15 +24,26 @@ void main() {
     expect(b.preparing.map((TvTicket t) => t.clientId), <String>['k']);
   });
 
-  test('placed, accepted and preparing are « En préparation »', () {
-    final TvBoard b = project(<PosOrder>[
-      order('p', status: PosOrderStatus.placed),
-      order('a', status: PosOrderStatus.accepted),
-      order('c', status: PosOrderStatus.preparing),
-      order('u', status: PosOrderStatus.pendingPayment),
-    ]);
-    expect(b.preparing.map((TvTicket t) => t.clientId).toSet(), <String>{'p', 'a', 'c'});
-    expect(b.ready, isEmpty);
+  test('the TV columns are exactly the KDS « En préparation » and « Prêtes » lanes', () {
+    final List<PosOrder> orders = <PosOrder>[
+      order('new', status: PosOrderStatus.placed),
+      order('acc', status: PosOrderStatus.accepted),
+      order('prep', status: PosOrderStatus.preparing),
+      order('rdy', status: PosOrderStatus.ready),
+      order('unpaid', status: PosOrderStatus.pendingPayment),
+    ];
+    final TvBoard b = project(orders);
+    // Same answer as the kitchen board's own rule, ticket by ticket.
+    expect(
+      b.preparing.map((TvTicket t) => t.clientId).toSet(),
+      orders.where((PosOrder o) => KdsLane.laneFor(o) == KdsLane.preparing).map((PosOrder o) => o.clientId).toSet(),
+    );
+    expect(b.preparing.map((TvTicket t) => t.clientId).toSet(), <String>{'acc', 'prep'});
+    expect(b.ready.map((TvTicket t) => t.clientId), <String>['rdy']);
+  });
+
+  test('« Nouvelles » (not yet accepted) is not on the TV', () {
+    expect(project(<PosOrder>[order('new', status: PosOrderStatus.placed)]).preparing, isEmpty);
   });
 
   test('a ready ticket stays 3 minutes, not one second more', () {
