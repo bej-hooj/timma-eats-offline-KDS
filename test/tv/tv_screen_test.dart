@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pos_core/pos_core.dart';
 import 'package:timma_kds/design/time_util.dart';
+import 'package:timma_kds/kds/audio/kds_alarm_sink.dart';
 import 'package:timma_kds/kds/state/kds_board.dart';
 import 'package:timma_kds/tv/data/silent_tv_speech.dart';
 import 'package:timma_kds/tv/domain/tv_rules.dart';
@@ -55,6 +56,7 @@ void main() {
           kdsStoreProvider.overrideWithValue(store),
           tvSpeechProvider.overrideWithValue(speech),
           tvClockProvider.overrideWithValue(() => now),
+          kdsAlarmSinkProvider.overrideWithValue(RecordingAlarmSink()),
         ],
         child: const TvApp(),
       ),
@@ -125,9 +127,12 @@ void main() {
   });
 
   testWidgets('the TV never rings the kitchen alarm', (WidgetTester tester) async {
-    final ProviderContainer c = await pump(tester, const Size(1920, 1080));
+    // A new, unclaimed ticket is exactly what makes the kitchen board ring.
     put(order('n', number: 3), const <PosOrderLine>[]);
-    await tester.pump(TvRules.refreshEvery);
-    expect(c.exists(kdsBoardProvider), isFalse);
+    final ProviderContainer c = await pump(tester, const Size(1920, 1080));
+    final RecordingAlarmSink alarm = c.read(kdsAlarmSinkProvider) as RecordingAlarmSink;
+    await tester.pump(TvRules.refreshEvery * 3);
+    expect(alarm.rung, isEmpty);
+    expect(find.text('03'), findsOneWidget);
   });
 }

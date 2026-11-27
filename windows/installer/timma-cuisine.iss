@@ -17,6 +17,10 @@
 #define AppName "TIMMA Cuisine"
 #define AppExe "timma_kds.exe"
 #define AppPublisher "TIMMA Restaurant"
+; The dining-room TV shortcut (S6). TvFlag must match kTvSurfaceFlag in
+; windows/runner/tv_surface.h and KdsSurfaceArgs.tvFlag in Dart.
+#define TvName "TIMMA Écran salle"
+#define TvFlag "--surface=tv"
 
 ; Passed in by the workflow: /DAppVersion=... and /DSourceDir=...
 #ifndef AppVersion
@@ -68,6 +72,11 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; only route a cook will ever use.
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
 Name: "startup"; Description: "Lancer TIMMA Cuisine au démarrage de l'ordinateur"; GroupDescription: "Démarrage"; Flags: unchecked
+; S6 — the dining-room TV. The same exe with --surface=tv opens full-screen on
+; the LG TV plugged into this PC by HDMI (Windows + P → « Étendre »). Unticked
+; by default: only the PC that drives the TV needs it.
+Name: "tvicon"; Description: "Icône « TIMMA Écran salle » (télé de la salle)"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "tvstartup"; Description: "Lancer l'écran salle au démarrage de l'ordinateur"; GroupDescription: "Démarrage"; Flags: unchecked
 
 [Files]
 ; ⚠ The WHOLE Release folder, not just the .exe. A Flutter Windows build needs
@@ -80,6 +89,9 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs 
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 Name: "{userstartup}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: startup
+Name: "{group}\{#TvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#TvFlag}"; Tasks: tvicon
+Name: "{autodesktop}\{#TvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#TvFlag}"; Tasks: tvicon
+Name: "{userstartup}\{#TvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#TvFlag}"; Tasks: tvstartup
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent

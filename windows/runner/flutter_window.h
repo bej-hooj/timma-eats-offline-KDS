@@ -6,13 +6,18 @@
 
 #include <memory>
 
+#include "tv_speech_channel.h"
 #include "win32_window.h"
 
 // A window that does nothing but host a Flutter view.
 class FlutterWindow : public Win32Window {
  public:
   // Creates a new FlutterWindow hosting a Flutter view running |project|.
-  explicit FlutterWindow(const flutter::DartProject& project);
+  // |tv_surface| = this process is the dining-room TV (--surface=tv): it
+  // registers the native speech channel and keeps itself full-screen on the
+  // TV monitor.
+  explicit FlutterWindow(const flutter::DartProject& project,
+                         bool tv_surface = false);
   virtual ~FlutterWindow();
 
  protected:
@@ -28,6 +33,12 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
+
+  // True for the dining-room TV process.
+  bool tv_surface_;
+
+  // The TV's voice; null in the kitchen process.
+  std::unique_ptr<TvSpeechChannel> tv_speech_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_
