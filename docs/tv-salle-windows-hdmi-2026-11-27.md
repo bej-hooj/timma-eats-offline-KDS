@@ -306,7 +306,7 @@ The TV speaks French (locale fixed to `fr`, like the KDS).
 | S6.7 | Installer tasks/icons + workflow untouched (it already builds the Release folder) | `windows/installer/timma-cuisine.iss` | ✅ `8444599` |
 | S6.8 | Docs: WINDOWS-CUISINE §4, ECOSYSTEM §25.3, POS plan S6 row, memory | docs | ✅ this commit |
 | S6.9 | (optional, later) `display` pairing role refused by the hub for intents | pos_link + borne + both pins | ⬜ later |
-| S6.10 | Build on the GitHub runner (`workflow_dispatch`, `-f ref=feat/tv-salle-2026-11-27`) — it runs analyze + test + build + Inno. ⚠ Publishing the setup on the release link = **owner yes first** | CI | ⬜ |
+| S6.10 | Build on the GitHub runner (`workflow_dispatch`, `-f ref=feat/tv-salle-2026-11-27`) — it runs analyze + test + build + Inno. ⚠ Publishing the setup on the release link = **owner yes first** | CI | ✅ run 45986516842 (edc0c51); Setup + APK 1.0.3(2014) published on `cuisine-win-20261123` at the owner's request |
 | S6.11 | Hardware proof on the owner's PC + LG TV (owner does the clicks; agent gives the checklist §10) | — | ⬜ |
 
 ## 10 · Test plan
