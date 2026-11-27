@@ -6,8 +6,8 @@
 #include "tv_surface.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project,
-                             bool tv_surface)
-    : project_(project), tv_surface_(tv_surface) {}
+                             tv_surface::Surface surface)
+    : project_(project), surface_(surface) {}
 
 FlutterWindow::~FlutterWindow() {}
 
@@ -27,9 +27,9 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
-  if (tv_surface_) {
+  if (tv_surface::IsDisplay(surface_)) {
     tv_speech_ = std::make_unique<TvSpeechChannel>(
-        flutter_controller_->engine()->messenger(), GetHandle());
+        flutter_controller_->engine()->messenger(), GetHandle(), surface_);
   }
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
@@ -80,12 +80,12 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       return 0;
     case WM_DISPLAYCHANGE:
     case WM_DPICHANGED:
-      if (tv_surface_) {
+      if (tv_surface::IsDisplay(surface_)) {
         // The TV was switched on after the PC, or its resolution/DPI moved:
         // let the base class react, then cover the TV monitor again.
         const LRESULT handled =
             Win32Window::MessageHandler(hwnd, message, wparam, lparam);
-        tv_surface::FillTargetMonitor(hwnd);
+        tv_surface::FillTargetMonitor(hwnd, surface_);
         return handled;
       }
       break;

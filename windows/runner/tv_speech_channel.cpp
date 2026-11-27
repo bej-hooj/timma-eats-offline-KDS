@@ -14,6 +14,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <regex>
 
 namespace {
 
@@ -91,6 +92,30 @@ wde::DeviceInformation FindOutput(const std::string* id) {
   }
 }
 
+std::atomic<bool> g_stopping{false};
+
+// Set by stopSound: the clip playing now ends at the next 100 ms check.
+std::atomic<bool> g_cut_clip{false};
+
+// playSound accepts a bare lowercase file name ending in .wav — nothing that
+// could climb out of assets/audio (path-traversal guard).
+bool IsSafeAssetName(const std::string& name) {
+  static const std::regex kSafe("^[a-z_]{1,40}\\.wav$");
+  return std::regex_match(name, kSafe);
+}
+
+// A human name for a monitor ("LG TV", "Generic PnP Monitor"); falls back to
+// the device name.
+std::string FriendlyMonitorName(const std::wstring& device) {
+  DISPLAY_DEVICEW dd{};
+  dd.cb = sizeof(dd);
+  if (EnumDisplayDevicesW(device.c_str(), 0, &dd, 0) && dd.DeviceString[0]) {
+    return winrt::to_string(dd.DeviceString);
+  }
+  return winrt::to_string(device);
+}
+
+
 // Plays |source| to the end (or the timeout) on |device|.
 bool Play(const wmc::MediaSource& source, const wde::DeviceInformation& device,
           const std::atomic<bool>& stopping) {
@@ -117,7 +142,8 @@ bool Play(const wmc::MediaSource& source, const wde::DeviceInformation& device,
     const auto deadline = std::chrono::steady_clock::now() + kPlayTimeout;
     // Short waits, so a closing app is never held for the full timeout.
     while (WaitForSingleObject(done, 100) == WAIT_TIMEOUT) {
-      if (stopping.load() || std::chrono::steady_clock::now() > deadline) {
+      if (stopping.load() || g_cut_clip.load() ||
+          std::chrono::steady_clock::now() > deadline) {
         ok.store(false);
         break;
       }
@@ -156,13 +182,11 @@ wms::VoiceInformation PickVoice(const std::string* id) {
   return any_french;
 }
 
-std::atomic<bool> g_stopping{false};
-
 }  // namespace
 
 TvSpeechChannel::TvSpeechChannel(flutter::BinaryMessenger* messenger,
-                                 HWND window)
-    : window_(window) {
+                                 HWND window, tv_surface::Surface surface)
+    : window_(window), surface_(surface) {
   g_stopping.store(false);
   channel_ = std::make_unique<flutter::MethodChannel<EncodableValue>>(
       messenger, kChannelName, &flutter::StandardMethodCodec::GetInstance());
@@ -250,6 +274,8 @@ void TvSpeechChannel::HandleCall(
     Enqueue(std::move(result), [text_copy, chime, output_copy, voice_copy,
                                 rate] {
       Outcome out;
+      // A stopSound aimed at an earlier clip must not cut this utterance.
+      g_cut_clip.store(false);
       const wde::DeviceInformation device = FindOutput(&output_copy);
       if (chime) {
         try {
@@ -278,6 +304,66 @@ void TvSpeechChannel::HandleCall(
         out.ok = false;
         out.error_code = "play_failed";
       }
+      return out;
+    });
+    return;
+  }
+
+  if (method == "listMonitors") {
+    // Win32 only, no WinRT: answered here on the platform thread.
+    EncodableList rows;
+    for (const tv_surface::MonitorInfo& m : tv_surface::ListMonitors()) {
+      rows.push_back(EncodableValue(EncodableMap{
+          {EncodableValue("id"), EncodableValue(winrt::to_string(m.device))},
+          {EncodableValue("name"), EncodableValue(FriendlyMonitorName(m.device))},
+          {EncodableValue("isPrimary"), EncodableValue(m.primary)},
+          {EncodableValue("width"),
+           EncodableValue(static_cast<int>(m.rect.right - m.rect.left))},
+          {EncodableValue("height"),
+           EncodableValue(static_cast<int>(m.rect.bottom - m.rect.top))},
+      }));
+    }
+    result->Success(EncodableValue(rows));
+    return;
+  }
+
+  if (method == "placeOnMonitor") {
+    const auto* args = std::get_if<EncodableMap>(call.arguments());
+    const std::string* id = args ? StringArg(*args, "id") : nullptr;
+    // Unknown or empty id = the surface's default (TargetMonitorRect).
+    tv_surface::SetPreferredMonitor(id ? winrt::to_hstring(*id).c_str()
+                                       : std::wstring());
+    tv_surface::FillTargetMonitor(window_, surface_);
+    result->Success();
+    return;
+  }
+
+  if (method == "stopSound") {
+    g_cut_clip.store(true);
+    result->Success();
+    return;
+  }
+
+  if (method == "playSound") {
+    const auto* args = std::get_if<EncodableMap>(call.arguments());
+    const std::string* asset = args ? StringArg(*args, "asset") : nullptr;
+    if (asset == nullptr || !IsSafeAssetName(*asset)) {
+      result->Error("bad_args", "asset must be a bare .wav name");
+      return;
+    }
+    const std::wstring file =
+        std::wstring(L"data\\flutter_assets\\assets\\audio\\") +
+        std::wstring(winrt::to_hstring(*asset).c_str());
+    const std::string* output = StringArg(*args, "outputId");
+    const std::string output_copy = output ? *output : "";
+    Enqueue(std::move(result), [file, output_copy] {
+      Outcome out;
+      g_cut_clip.store(false);
+      const wde::DeviceInformation device = FindOutput(&output_copy);
+      const auto storage =
+          wst::StorageFile::GetFileFromPathAsync(ExeDirectory() + file).get();
+      Play(wmc::MediaSource::CreateFromStorageFile(storage), device,
+           g_stopping);
       return out;
     });
     return;

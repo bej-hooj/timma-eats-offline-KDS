@@ -6,6 +6,8 @@
 #include <flutter/method_channel.h>
 #include <windows.h>
 
+#include "tv_surface.h"
+
 #include <condition_variable>
 #include <deque>
 #include <functional>
@@ -29,6 +31,10 @@
 //   listVoices  -> [{id, name, language}]
 //   say {text: String, chime: bool, outputId: String?, voiceId: String?}
 //               -> null once played (one utterance at a time, in order)
+//   listMonitors   -> [{id, name, isPrimary, width, height}]   (S6-B)
+//   placeOnMonitor {id: String?} -> null (window moved; null = default)
+//   playSound {asset: "kds_waiting.wav", outputId: String?} -> null when done
+//   stopSound      -> null (cuts the clip playing now)
 class TvSpeechChannel {
  public:
   // Keep identical to WindowsTvSpeech.channelName.
@@ -38,7 +44,8 @@ class TvSpeechChannel {
   // Deliver(). WPARAM = job id.
   static constexpr UINT kDoneMessage = WM_APP + 0x54;
 
-  TvSpeechChannel(flutter::BinaryMessenger* messenger, HWND window);
+  TvSpeechChannel(flutter::BinaryMessenger* messenger, HWND window,
+                  tv_surface::Surface surface);
   ~TvSpeechChannel();
 
   TvSpeechChannel(const TvSpeechChannel&) = delete;
@@ -62,6 +69,7 @@ class TvSpeechChannel {
   void WorkerLoop();
 
   HWND window_;
+  tv_surface::Surface surface_;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
 
   std::mutex mutex_;

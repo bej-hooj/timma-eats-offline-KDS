@@ -21,6 +21,10 @@
 ; windows/runner/tv_surface.h and KdsSurfaceArgs.tvFlag in Dart.
 #define TvName "TIMMA Écran salle"
 #define TvFlag "--surface=tv"
+; The kitchen TV « Écran cuisine » (S6-B): the kitchen kanban, read-only, on
+; the back TV (VGA). Must match kKitchenTvSurfaceFlag / KdsSurfaceArgs.
+#define KitchenTvName "TIMMA Écran cuisine"
+#define KitchenTvFlag "--surface=kitchen-tv"
 
 ; Passed in by the workflow: /DAppVersion=... and /DSourceDir=...
 #ifndef AppVersion
@@ -77,6 +81,8 @@ Name: "startup"; Description: "Lancer TIMMA Cuisine au démarrage de l'ordinateu
 ; by default: only the PC that drives the TV needs it.
 Name: "tvicon"; Description: "Icône « TIMMA Écran salle » (télé de la salle)"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "tvstartup"; Description: "Lancer l'écran salle au démarrage de l'ordinateur"; GroupDescription: "Démarrage"; Flags: unchecked
+Name: "kitchentvicon"; Description: "Icône « TIMMA Écran cuisine » (télé de la cuisine)"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "kitchentvstartup"; Description: "Lancer l'écran cuisine au démarrage de l'ordinateur"; GroupDescription: "Démarrage"; Flags: unchecked
 
 [Files]
 ; ⚠ The WHOLE Release folder, not just the .exe. A Flutter Windows build needs
@@ -92,6 +98,9 @@ Name: "{userstartup}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: startup
 Name: "{group}\{#TvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#TvFlag}"; Tasks: tvicon
 Name: "{autodesktop}\{#TvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#TvFlag}"; Tasks: tvicon
 Name: "{userstartup}\{#TvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#TvFlag}"; Tasks: tvstartup
+Name: "{group}\{#KitchenTvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#KitchenTvFlag}"; Tasks: kitchentvicon
+Name: "{autodesktop}\{#KitchenTvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#KitchenTvFlag}"; Tasks: kitchentvicon
+Name: "{userstartup}\{#KitchenTvName}"; Filename: "{app}\{#AppExe}"; Parameters: "{#KitchenTvFlag}"; Tasks: kitchentvstartup
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
