@@ -7,7 +7,18 @@ class SilentTvSpeech implements TvSpeech {
   SilentTvSpeech({
     this.availableOutputs = const <TvAudioOutput>[],
     this.availableVoices = const <TvVoice>[],
+    this.availableMonitors = const <TvMonitor>[],
   });
+
+  final List<TvMonitor> availableMonitors;
+
+  /// Monitor placements asked for, in order.
+  final List<String?> placements = <String?>[];
+
+  /// Sounds played, as `asset@output`.
+  final List<String> sounds = <String>[];
+
+  int stops = 0;
 
   final List<TvAudioOutput> availableOutputs;
   final List<TvVoice> availableVoices;
@@ -29,4 +40,17 @@ class SilentTvSpeech implements TvSpeech {
     said.add(utterance);
     outputsUsed.add(outputId);
   }
+
+  @override
+  Future<List<TvMonitor>> monitors() async => availableMonitors;
+
+  @override
+  Future<void> placeOnMonitor(String? id) async => placements.add(id);
+
+  @override
+  Future<void> playSound(String asset, {String? outputId}) async =>
+      sounds.add('$asset@$outputId');
+
+  @override
+  Future<void> stopSound() async => stops++;
 }

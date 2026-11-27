@@ -24,8 +24,29 @@ class TvVoice {
   bool get isFrench => language.toLowerCase().startsWith('fr');
 }
 
+/// A screen Windows knows (laptop panel, HDMI TV, VGA TV).
+class TvMonitor {
+  const TvMonitor({
+    required this.id,
+    required this.name,
+    this.isPrimary = false,
+    this.width = 0,
+    this.height = 0,
+  });
+
+  /// Windows' device name (`\\.\DISPLAY2`) — stable while the cable stays.
+  final String id;
+  final String name;
+  final bool isPrimary;
+  final int width;
+  final int height;
+}
+
 /// The port the TV speaks through. Implemented natively on Windows
 /// (`timma/tv_speech`), silently everywhere else.
+///
+/// Also the display surfaces' window and sound port (S6-B): which monitor the
+/// window covers, and alarm sounds played on a chosen output.
 ///
 /// Implementations must never throw into the caller for a speech failure: a
 /// TV that cannot speak must keep showing numbers.
@@ -40,4 +61,17 @@ abstract interface class TvSpeech {
   /// finished playing. A null or unknown [outputId] / [voiceId] uses the
   /// system default.
   Future<void> say(TvUtterance utterance, {String? outputId, String? voiceId});
+
+  /// Screens Windows currently drives; empty when unknown.
+  Future<List<TvMonitor>> monitors();
+
+  /// Moves this window full-screen onto monitor [id]; null = the surface's
+  /// default (salle: first non-primary, cuisine: last non-primary).
+  Future<void> placeOnMonitor(String? id);
+
+  /// Plays `assets/audio/[asset]` (a bare `*.wav` name) on [outputId].
+  Future<void> playSound(String asset, {String? outputId});
+
+  /// Stops the sound [playSound] started, now.
+  Future<void> stopSound();
 }

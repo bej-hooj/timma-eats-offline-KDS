@@ -114,7 +114,8 @@ class AudioAlarmSink implements KdsAlarmSink {
   /// Exhaustive on purpose, too: a register added to the enum without a tone
   /// would otherwise fall into whichever branch was written last, and the
   /// kitchen would be called to the wrong job.
-  @visibleForTesting
+  ///
+  /// Public (S6-B): `OutputAlarmSink` plays the same files on a chosen output.
   static String assetFor(KdsAlarmRegister register) => switch (register) {
     KdsAlarmRegister.counter => _counterAsset,
     KdsAlarmRegister.waiting => _waitingAsset,

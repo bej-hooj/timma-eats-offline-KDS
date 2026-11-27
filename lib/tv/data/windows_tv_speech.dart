@@ -20,6 +20,10 @@ class WindowsTvSpeech implements TvSpeech {
   static const String _listOutputs = 'listOutputs';
   static const String _listVoices = 'listVoices';
   static const String _say = 'say';
+  static const String _listMonitors = 'listMonitors';
+  static const String _placeOnMonitor = 'placeOnMonitor';
+  static const String _playSound = 'playSound';
+  static const String _stopSound = 'stopSound';
 
   final MethodChannel _channel;
 
@@ -59,6 +63,45 @@ class WindowsTvSpeech implements TvSpeech {
       });
     } on PlatformException catch (e) {
       debugPrint('[TvSpeech] say failed: ${e.code}');
+    } on MissingPluginException {
+      debugPrint('[TvSpeech] native channel missing');
+    }
+  }
+
+  @override
+  Future<List<TvMonitor>> monitors() async {
+    final List<Map<Object?, Object?>> rows = await _list(_listMonitors);
+    return <TvMonitor>[
+      for (final Map<Object?, Object?> r in rows)
+        if (r['id'] is String && r['name'] is String)
+          TvMonitor(
+            id: r['id']! as String,
+            name: r['name']! as String,
+            isPrimary: r['isPrimary'] == true,
+            width: r['width'] is int ? r['width']! as int : 0,
+            height: r['height'] is int ? r['height']! as int : 0,
+          ),
+    ];
+  }
+
+  @override
+  Future<void> placeOnMonitor(String? id) =>
+      _call(_placeOnMonitor, <String, Object?>{'id': id});
+
+  @override
+  Future<void> playSound(String asset, {String? outputId}) => _call(
+    _playSound,
+    <String, Object?>{'asset': asset, 'outputId': outputId},
+  );
+
+  @override
+  Future<void> stopSound() => _call(_stopSound, null);
+
+  Future<void> _call(String method, Object? args) async {
+    try {
+      await _channel.invokeMethod<void>(method, args);
+    } on PlatformException catch (e) {
+      debugPrint('[TvSpeech] $method failed: ${e.code}');
     } on MissingPluginException {
       debugPrint('[TvSpeech] native channel missing');
     }

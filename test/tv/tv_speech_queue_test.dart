@@ -19,6 +19,18 @@ class _GatedSpeech implements TvSpeech {
   Future<List<TvVoice>> voices() async => const <TvVoice>[];
 
   @override
+  Future<List<TvMonitor>> monitors() async => const <TvMonitor>[];
+
+  @override
+  Future<void> placeOnMonitor(String? id) async {}
+
+  @override
+  Future<void> playSound(String asset, {String? outputId}) async {}
+
+  @override
+  Future<void> stopSound() async {}
+
+  @override
   Future<void> say(TvUtterance u, {String? outputId, String? voiceId}) {
     started.add('${u.text}@$outputId');
     if (fail) {
