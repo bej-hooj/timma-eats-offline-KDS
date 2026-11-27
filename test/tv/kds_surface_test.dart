@@ -16,4 +16,16 @@ void main() {
     expect(KdsSurfaceArgs.storeFileName(KdsSurface.kitchen), 'kds.db');
     expect(KdsSurfaceArgs.storeFileName(KdsSurface.tv), 'kds-tv.db');
   });
+
+  test('the kitchen TV has its own flag and store', () {
+    expect(KdsSurfaceArgs.parse(const <String>['--surface=kitchen-tv']), KdsSurface.kitchenTv);
+    expect(KdsSurfaceArgs.storeFileName(KdsSurface.kitchenTv), 'kds-cuisine-tv.db');
+    expect(
+      KdsSurface.values.map(KdsSurfaceArgs.storeFileName).toSet(),
+      hasLength(KdsSurface.values.length),
+    );
+    expect(KdsSurfaceArgs.isDisplay(KdsSurface.kitchen), isFalse);
+    expect(KdsSurfaceArgs.isDisplay(KdsSurface.tv), isTrue);
+    expect(KdsSurfaceArgs.isDisplay(KdsSurface.kitchenTv), isTrue);
+  });
 }

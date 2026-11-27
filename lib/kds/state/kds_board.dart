@@ -231,6 +231,11 @@ final Provider<void Function()> kdsIntentPublisherProvider =
 ///
 /// [AudioAlarmSink] builds its player lazily and swallows platform failures, so
 /// this default costs a widget test nothing.
+/// True only on the « Écran cuisine » (S6-B): the kitchen kanban on a TV that
+/// nobody touches. Every action callback of the board is then null — the
+/// cooks act on the tablet, the TV mirrors it.
+final Provider<bool> kdsReadOnlyProvider = Provider<bool>((Ref ref) => false);
+
 final Provider<KdsAlarmSink> kdsAlarmSinkProvider = Provider<KdsAlarmSink>((
   Ref ref,
 ) {

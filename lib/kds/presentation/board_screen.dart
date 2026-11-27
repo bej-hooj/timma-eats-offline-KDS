@@ -29,6 +29,8 @@ class KdsBoardScreen extends ConsumerWidget {
     final KdsLinkState link = ref.watch(kdsLinkProvider);
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final String? view = ref.watch(kdsViewProvider);
+    // The « Écran cuisine » mirrors the tablet: no action, no mute, no switch.
+    final bool readOnly = ref.watch(kdsReadOnlyProvider);
 
     return PopScope(
       // The kitchen board has the same rule as the kiosk (§K8): back must not
@@ -45,13 +47,13 @@ class KdsBoardScreen extends ConsumerWidget {
                 _Header(
                   board: board,
                   link: link,
-                  onMute: controller.muteAlarm,
+                  onMute: readOnly ? null : controller.muteAlarm,
                   onRepair: () => _confirmRepair(context, ref),
                   title: view == KdsView.cashier
                       ? l10n.kdsViewCashier
                       : l10n.kdsBoardTitle,
                   // « Changer de vue » — only once a view was chosen.
-                  onSwitchView: view == null
+                  onSwitchView: view == null || readOnly
                       ? null
                       : ref.read(kdsViewProvider.notifier).clear,
                 ),
@@ -141,13 +143,16 @@ class KdsBoardScreen extends ConsumerWidget {
                               linesOf: board.linesOf,
                               now: board.now,
                               emptyLabel: l10n.kdsLaneEmpty,
-                              onAction: (PosOrder order) =>
-                                  order.status == PosOrderStatus.pendingPayment
-                                  ? controller.settleCash(order.clientId)
-                                  : controller.advance(order),
+                              onAction: readOnly
+                                  ? null
+                                  : (PosOrder order) =>
+                                        order.status ==
+                                            PosOrderStatus.pendingPayment
+                                        ? controller.settleCash(order.clientId)
+                                        : controller.advance(order),
                               // Only the till removes tickets, and only the
                               // unpaid ones it holds (S10).
-                              onDelete: lane == KdsLane.counter
+                              onDelete: lane == KdsLane.counter && !readOnly
                                   ? (PosOrder order) => _confirmDelete(
                                       context,
                                       order,
@@ -266,7 +271,8 @@ class _Header extends StatelessWidget {
   final String title;
   final KdsBoardState board;
   final KdsLinkState link;
-  final VoidCallback onMute;
+  /// Null on a read-only board: the mute button is then never drawn.
+  final VoidCallback? onMute;
   final VoidCallback onRepair;
   final VoidCallback? onSwitchView;
 
@@ -382,7 +388,7 @@ class _Header extends StatelessWidget {
         ],
         // Only while it is actually making noise. A permanent mute button is a
         // button somebody presses once, out of curiosity, at 11:00.
-        if (board.alarming && compact)
+        if (board.alarming && compact && onMute != null)
           // Same button, same 72 dp target, no label. A cook silencing an
           // alarm is not reading the button.
           Tooltip(
@@ -400,7 +406,7 @@ class _Header extends StatelessWidget {
               ),
             ),
           )
-        else if (board.alarming)
+        else if (board.alarming && onMute != null)
           FilledButton.icon(
             // ⚠ The theme's `minimumSize` is `Size.fromHeight` — **infinite
             // width** — because every other button on this board is a full-width
@@ -528,7 +534,8 @@ class _Lane extends StatefulWidget {
   final List<PosOrderLine> Function(String clientId) linesOf;
   final DateTime now;
   final String emptyLabel;
-  final void Function(PosOrder order) onAction;
+  /// Null on a read-only board (the Écran cuisine): no card is actionable.
+  final void Function(PosOrder order)? onAction;
 
   /// The trash icon on each card; null in every lane but *À encaisser*.
   final void Function(PosOrder order)? onDelete;
@@ -725,8 +732,9 @@ class _LaneState extends State<_Lane> {
                                 // the little room a short screen leaves is
                                 // spent on what a cook actually reads.
                                 maxHeight: constraints.maxHeight,
-                                onPrimaryAction: actionable
-                                    ? () => widget.onAction(order)
+                                onPrimaryAction:
+                                    actionable && widget.onAction != null
+                                    ? () => widget.onAction!(order)
                                     : null,
                                 onDelete:
                                     widget.onDelete != null &&
