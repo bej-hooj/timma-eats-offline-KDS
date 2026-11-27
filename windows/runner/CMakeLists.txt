@@ -39,6 +39,9 @@ target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 # The TV's voice (tv_speech_channel.cpp) uses C++/WinRT: SpeechSynthesizer,
 # MediaPlayer and device enumeration all live in the WinRT umbrella library.
 target_link_libraries(${BINARY_NAME} PRIVATE "windowsapp.lib")
+# C++/WinRT under C++17 falls back to <experimental/coroutine>, which MSVC 14.5x
+# rejects (STL1011). C++20 gives it the standard <coroutine>.
+target_compile_features(${BINARY_NAME} PRIVATE cxx_std_20)
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.
