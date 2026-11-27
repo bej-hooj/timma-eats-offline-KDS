@@ -155,3 +155,36 @@ the borne's own screen.
 
 So it is safe enough, and it is still the owner's call, not a default. Nothing
 public exists today.
+
+---
+
+## 5 · L'écran salle sur la télé LG (S6, 1.0.3+2014)
+
+Le même PC fait tourner **deux fenêtres** du même programme : la cuisine sur
+l'écran du PC, et l'**écran salle** (numéros « En préparation » / « Prêt — à
+récupérer », annonce vocale) en plein écran sur la télé LG branchée en HDMI.
+Détails techniques : `docs/tv-salle-windows-hdmi-2026-11-27.md`.
+
+1. **Brancher** le câble HDMI du PC à la télé LG. Télé : bouton *Input* → cette
+   entrée HDMI.
+2. PC : **Windows + P → « Étendre »**. Paramètres → Système → Affichage :
+   l'écran du PC reste **écran principal** ; la télé en 1920 × 1080.
+3. Paramètres → Système → Son : **sortie par défaut = haut-parleurs du PC**
+   (l'alarme cuisine sonne là). Ne pas mettre la télé par défaut.
+4. **Voix française** : Paramètres → Heure et langue → Voix → Ajouter des voix
+   → *Français (France)* (déjà présente sur un Windows en français).
+5. Installer la nouvelle `TIMMA-Cuisine-Setup.exe` et cocher **« Icône TIMMA
+   Écran salle »** et **« Lancer l'écran salle au démarrage »**.
+6. Double-clic sur **TIMMA Écran salle** → la fenêtre s'ouvre sur la télé →
+   écran d'appairage → sur la borne : **Autoriser** (une seule fois — la télé
+   est un tableau appairé de plus, comme une deuxième cuisine).
+7. Sur la télé : touche **F2** (ou double-clic sur l'heure) → *Sortie son* :
+   choisir la télé LG → **Tester la voix** → *Fermer*.
+8. Télé LG : Réglages → Général → Économie d'énergie → **Arrêt automatique :
+   désactivé**. PC : Alimentation → écran **Jamais**.
+9. Plus de ~10 m entre le PC et la télé : câble HDMI **actif** ou extendeur
+   HDMI sur câble Ethernet. Rien d'autre ne change.
+
+Bon à savoir : double-cliquer une deuxième fois sur une icône ne lance pas une
+deuxième copie, ça remet la fenêtre déjà ouverte devant. Si la télé est
+allumée après le PC, la fenêtre revient d'elle-même sur la télé.

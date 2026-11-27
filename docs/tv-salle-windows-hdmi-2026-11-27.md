@@ -1,6 +1,6 @@
 # S6 · Dining-room TV on the kitchen's Windows PC + LG TV over HDMI — 2026-11-27
 
-> **Status: PLANNED — nothing built yet.** This file is the plan, the file
+> **Status (2026-11-27): BUILT on branch `feat/tv-salle-2026-11-27` (S6.1–S6.8); Windows proof on the owner's PC + LG TV pending (S6.10–S6.11).** This file is the plan, the file
 > contract and the task cards. The stage table in §9 is the only status source;
 > tick it as you go. Canon: `timmaeat-webapp/ECOSYSTEM.md` §25.3.
 >
@@ -297,14 +297,14 @@ The TV speaks French (locale fixed to `fr`, like the KDS).
 | # | Stage | Files | Status |
 |---|---|---|---|
 | S6.0 | Branch `feat/tv-salle-2026-11-27` from `feat/roles-tv-logo-2026-11-25` (= `main` `1569782`). Leave the uncommitted `macos/` + `.metadata` + `analysis_options.yaml` alone (never commit them). | — | ✅ `909b34e` (pushed) |
-| S6.1 | Surface parsing + separate store + `main(args)` split (kitchen path unchanged) | `lib/launch/kds_surface.dart`, `lib/main.dart` | ⬜ |
-| S6.2 | Domain: rules, ticket, board projection, speech text, announcer — **with tests first** | `lib/tv/domain/*`, `test/tv/*` | ⬜ |
-| S6.3 | Port + silent impl + queue + settings controller + board controller | `lib/tv/ports`, `lib/tv/data/silent_tv_speech.dart`, `lib/tv/state/*` | ⬜ |
-| S6.4 | Presentation: TvApp, TvRoot, TvScreen, widgets, settings dialog; l10n fr/en; widget tests at 1920×1080 and 1280×720 | `lib/tv/presentation/*`, arb | ⬜ |
-| S6.5 | `WindowsTvSpeech` (Dart side of the channel) | `lib/tv/data/windows_tv_speech.dart` | ⬜ |
-| S6.6 | Windows runner: mutex, monitor placement, full-screen, no-sleep, `WM_DISPLAYCHANGE`, speech channel, CMake | `windows/runner/*` | ⬜ |
-| S6.7 | Installer tasks/icons + workflow untouched (it already builds the Release folder) | `windows/installer/timma-cuisine.iss` | ⬜ |
-| S6.8 | Docs: WINDOWS-CUISINE §4, ECOSYSTEM §25.3, POS plan S6 row, memory | docs | ⬜ |
+| S6.1 | Surface parsing + separate store + `main(args)` split (kitchen path unchanged) | `lib/launch/kds_surface.dart`, `lib/main.dart` | ✅ `3f63410` |
+| S6.2 | Domain: rules, ticket, board projection, speech text, announcer — **with tests first** | `lib/tv/domain/*`, `test/tv/*` | ✅ `3f63410` |
+| S6.3 | Port + silent impl + queue + settings controller + board controller | `lib/tv/ports`, `lib/tv/data/silent_tv_speech.dart`, `lib/tv/state/*` | ✅ `3f63410` |
+| S6.4 | Presentation: TvApp, TvRoot, TvScreen, widgets, settings dialog; l10n fr/en; widget tests at 1920×1080 and 1280×720 | `lib/tv/presentation/*`, arb | ✅ `3f63410` (+ `few numbers bigger`) |
+| S6.5 | `WindowsTvSpeech` (Dart side of the channel) | `lib/tv/data/windows_tv_speech.dart` | ✅ `3f63410` |
+| S6.6 | Windows runner: mutex, monitor placement, full-screen, no-sleep, `WM_DISPLAYCHANGE`, speech channel, CMake | `windows/runner/*` | ✅ `8444599` |
+| S6.7 | Installer tasks/icons + workflow untouched (it already builds the Release folder) | `windows/installer/timma-cuisine.iss` | ✅ `8444599` |
+| S6.8 | Docs: WINDOWS-CUISINE §4, ECOSYSTEM §25.3, POS plan S6 row, memory | docs | ✅ this commit |
 | S6.9 | (optional, later) `display` pairing role refused by the hub for intents | pos_link + borne + both pins | ⬜ later |
 | S6.10 | Build on the GitHub runner (`workflow_dispatch`, `-f ref=feat/tv-salle-2026-11-27`) — it runs analyze + test + build + Inno. ⚠ Publishing the setup on the release link = **owner yes first** | CI | ⬜ |
 | S6.11 | Hardware proof on the owner's PC + LG TV (owner does the clicks; agent gives the checklist §10) | — | ⬜ |
@@ -347,3 +347,23 @@ then the owner checklist: TV opens on the LG; pairing; a borne test order →
 prête » + dishes on the TV, kitchen alarm still on the PC speakers; 3 min →
 gone; unplug HDMI and replug → the window comes back on the TV; reboot PC →
 both start; double-click the icon again → no second window.
+
+## 11 · Results — 2026-11-27 (build session)
+
+- Dart: `lib/launch/kds_surface.dart`, `lib/tv/**` (domain/ports/data/state/
+  presentation), `lib/main.dart` split; 17 fr/en strings. Kitchen path
+  unchanged.
+- Native: `windows/runner/tv_surface.*` (monitor, borderless full-screen,
+  keep-awake), `tv_speech_channel.*` (WinRT speech → chosen output, worker
+  thread, results posted back to the platform thread), mutex per surface in
+  `main.cpp`, `WM_DISPLAYCHANGE`/`WM_DPICHANGED` re-fill, `windowsapp.lib`.
+- Installer: tasks `tvicon` / `tvstartup`, shortcuts with `--surface=tv`.
+- Version 1.0.3+2014.
+- Tests: KDS full suite 158 passed (126 existing + 32 TV), `flutter analyze`
+  clean. Visual check on macOS (temporary preview entrypoint, deleted): two
+  columns, codes only, fresh ready number enlarged, offline badge, clock.
+- **Deviation from §3:** tiles are 2 per row while a column holds ≤ 4 numbers
+  (bigger codes), 3 per row beyond.
+- **Not verifiable here:** the C++ (compiled only on the GitHub runner), the
+  voice, the TV monitor placement and the HDMI audio routing — owner checklist
+  §10 on the real PC + LG TV.
