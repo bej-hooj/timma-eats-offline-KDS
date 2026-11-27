@@ -175,7 +175,7 @@ full-screen on its own monitor. It REUSES the kitchen board screen
 | B7 | Installer tasks/icons | `windows/installer/timma-cuisine.iss` | ✅ `3610c79` |
 | B8 | Full suite + analyze; macOS visual check (temporary preview entrypoint, never committed); Windows CI run green | — | ⬜ |
 | B9 | Docs: WINDOWS-CUISINE §6, this table, ECOSYSTEM §25.3-b, memory, Claude Doc guide section | docs | ⬜ |
-| B10 | Publish 1.0.4 (2015) Setup + APK on `cuisine-win-20261123` — **owner yes first** | release | ⬜ |
+| B10 | Publish 1.0.4 (2015) Setup + APK on `cuisine-win-20261123` — **owner yes first** | release | ✅ owner yes 2026-11-27; Setup from CI 46025232361 (3610c79) + APK from identical code, cert ddaa7f71. Borne unchanged since 1.0.2 (62f627c) → no rebuild needed |
 | B11 | Owner hardware proof (§9 checklist) | — | ⬜ |
 
 ## 9 · Test plan
