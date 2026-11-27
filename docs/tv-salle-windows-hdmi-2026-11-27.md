@@ -296,7 +296,7 @@ The TV speaks French (locale fixed to `fr`, like the KDS).
 
 | # | Stage | Files | Status |
 |---|---|---|---|
-| S6.0 | Branch `feat/tv-salle-2026-11-27` from `feat/roles-tv-logo-2026-11-25` (= `main` `1569782`). Leave the uncommitted `macos/` + `.metadata` + `analysis_options.yaml` alone (never commit them). | — | ⬜ |
+| S6.0 | Branch `feat/tv-salle-2026-11-27` from `feat/roles-tv-logo-2026-11-25` (= `main` `1569782`). Leave the uncommitted `macos/` + `.metadata` + `analysis_options.yaml` alone (never commit them). | — | ✅ `909b34e` (pushed) |
 | S6.1 | Surface parsing + separate store + `main(args)` split (kitchen path unchanged) | `lib/launch/kds_surface.dart`, `lib/main.dart` | ⬜ |
 | S6.2 | Domain: rules, ticket, board projection, speech text, announcer — **with tests first** | `lib/tv/domain/*`, `test/tv/*` | ⬜ |
 | S6.3 | Port + silent impl + queue + settings controller + board controller | `lib/tv/ports`, `lib/tv/data/silent_tv_speech.dart`, `lib/tv/state/*` | ⬜ |
