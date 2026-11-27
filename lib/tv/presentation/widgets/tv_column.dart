@@ -24,9 +24,16 @@ class TvColumnView extends StatelessWidget {
   final bool ready;
   final DateTime now;
 
-  /// 3 × 4 = [TvRules.maxPerColumn] tiles.
-  static const int _perRow = 3;
-  static const int _rows = TvRules.maxPerColumn ~/ _perRow;
+  /// Up to [_fewTickets] numbers: 2 per row, drawn bigger (the usual case —
+  /// a customer reads their number from across the room). More: 3 per row,
+  /// 3 × 4 = [TvRules.maxPerColumn].
+  static const int _fewTickets = 4;
+  static const int _perRowFew = 2;
+  static const int _perRowMany = 3;
+  static const int _minRows = 2;
+
+  /// A tile is never taller than this share of its width.
+  static const double _maxAspect = 0.55;
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +46,10 @@ class TvColumnView extends StatelessWidget {
           final double gap = box.maxWidth * 0.025;
           final double titleSize = box.maxHeight * 0.075;
           final double gridHeight = box.maxHeight - titleSize * 2.2 - gap * 2;
-          final double tileW = (box.maxWidth - gap * (_perRow + 1)) / _perRow;
-          final double tileH = ((gridHeight - gap * (_rows - 1)) / _rows).clamp(0, tileW * 0.62);
+          final int perRow = tickets.length <= _fewTickets ? _perRowFew : _perRowMany;
+          final int rows = (tickets.length / perRow).ceil().clamp(_minRows, TvRules.maxPerColumn ~/ perRow);
+          final double tileW = (box.maxWidth - gap * (perRow + 1)) / perRow;
+          final double tileH = ((gridHeight - gap * (rows - 1)) / rows).clamp(0, tileW * _maxAspect);
           return Padding(
             padding: EdgeInsets.all(gap),
             child: Column(
