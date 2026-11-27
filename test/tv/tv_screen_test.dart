@@ -83,10 +83,20 @@ void main() {
     });
   }
 
-  testWidgets('only codes are drawn — no dish names on screen', (WidgetTester tester) async {
-    put(order('r', number: 7, status: PosOrderStatus.ready), <PosOrderLine>[line('Ndolé', 2)]);
+  testWidgets('only codes are drawn — no dish names on screen', (
+    WidgetTester tester,
+  ) async {
+    final PosOrder sale = order(
+      'r',
+      number: 1,
+      station: 'AD',
+      dailyCode: 'K12',
+      status: PosOrderStatus.ready,
+    );
+    put(sale, <PosOrderLine>[line('Ndolé', 2)]);
     await pump(tester, const Size(1920, 1080));
-    expect(find.text('07'), findsOneWidget);
+    expect(find.text(sale.ticketLabelOrNull!), findsOneWidget);
+    expect(find.text('K12'), findsNothing);
     expect(find.textContaining('Ndolé'), findsNothing);
   });
 

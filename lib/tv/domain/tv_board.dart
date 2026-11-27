@@ -39,7 +39,7 @@ class TvBoard {
     final List<PosOrder> preparing = <PosOrder>[];
     final List<PosOrder> ready = <PosOrder>[];
     for (final PosOrder order in orders) {
-      if (order.source != TvRules.source || _labelOf(order).isEmpty) {
+      if (order.source != TvRules.source || order.boardLabelOrNull == null) {
         continue;
       }
       // The kitchen board's own lane rule — one definition, so the TV can
@@ -75,16 +75,13 @@ class TvBoard {
       ticket.column == TvColumn.ready &&
       now.difference(ticket.since) < TvRules.highlightFor;
 
-  static String _labelOf(PosOrder order) =>
-      order.ticketLabelOrNull ?? order.dailyCode ?? order.orderCode ?? '';
-
   static TvTicket _ticket(
     PosOrder order,
     TvColumn column,
     List<PosOrderLine> lines,
   ) => TvTicket(
     clientId: order.clientId,
-    label: _labelOf(order),
+    label: order.boardLabelOrNull!,
     column: column,
     since: order.statusChangedAt,
     lines: <TvSpokenLine>[

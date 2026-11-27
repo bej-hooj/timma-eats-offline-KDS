@@ -12,6 +12,7 @@ PosOrder order(
   DateTime? changed,
   int? number = 7,
   String? dailyCode,
+  String? station,
 }) => PosOrder(
   clientId: id,
   branchId: 'branch-1',
@@ -29,6 +30,7 @@ PosOrder order(
   placedAtDevice: placed ?? t0,
   statusChangedAt: changed ?? t0,
   ticketNumber: number,
+  stationCode: station,
   dailyCode: dailyCode,
 );
 

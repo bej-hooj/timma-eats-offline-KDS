@@ -224,6 +224,8 @@ void main() {
         .single;
     expect(arrived.clientId, placed.order.clientId);
     expect(arrived.total, 4500);
+    expect(arrived.boardLabelOrNull, placed.order.ticketLabelOrNull);
+    expect(arrived.boardLabelOrNull, hasLength(4));
     expect(
       speaker.rung,
       // The ticket lands in *À encaisser* — unpaid — so the register is

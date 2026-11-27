@@ -83,12 +83,12 @@ void main() {
     expect(b.ready.map((TvTicket t) => t.clientId), isNot(contains('r0')));
   });
 
-  test('a ticket without a number is skipped; dailyCode is a fallback label', () {
+  test('a kiosk ticket without a printed code never shows the daily code', () {
     final TvBoard b = project(<PosOrder>[
       order('blank', number: null),
       order('daily', number: null, dailyCode: 'K12'),
     ]);
-    expect(b.preparing.map((TvTicket t) => t.label), <String>['K12']);
+    expect(b.preparing, isEmpty);
   });
 
   test('ready tickets carry their lines with the variant', () {

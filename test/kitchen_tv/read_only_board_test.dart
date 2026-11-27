@@ -27,7 +27,18 @@ void main() {
     store.writeMeta(KdsViewController.metaKey, KdsView.kitchen);
     alarm = RecordingAlarmSink();
     final DateTime now = DateTime.now().toUtc();
-    store.insertOrder(order('n', number: 1, status: PosOrderStatus.placed, placed: now, changed: now), <PosOrderLine>[line('Ndolé', 1)]);
+    store.insertOrder(
+      order(
+        'n',
+        number: 1,
+        station: 'AD',
+        dailyCode: 'K12',
+        status: PosOrderStatus.placed,
+        placed: now,
+        changed: now,
+      ),
+      <PosOrderLine>[line('Ndolé', 1)],
+    );
     store.insertOrder(order('p', number: 2, placed: now, changed: now), <PosOrderLine>[line('Koki', 1)]);
   });
   tearDown(() => store.close());
@@ -51,6 +62,18 @@ void main() {
 
   List<KdsTicketCard> cards(WidgetTester tester) =>
       tester.widgetList<KdsTicketCard>(find.byType(KdsTicketCard)).toList();
+
+  testWidgets('tablet KDS and kitchen TV show the same printed ticket', (
+    WidgetTester tester,
+  ) async {
+    final String label = store.findOrder('n')!.ticketLabelOrNull!;
+    for (final bool readOnly in <bool>[false, true]) {
+      await pump(tester, readOnly: readOnly);
+      expect(find.text('Ticket $label'), findsOneWidget);
+      expect(find.textContaining('K12'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
 
   testWidgets('read-only: tickets shown, no card actionable, no switch or mute', (WidgetTester tester) async {
     await pump(tester, readOnly: true);

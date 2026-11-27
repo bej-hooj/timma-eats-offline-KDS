@@ -2,7 +2,7 @@ name: timma_kds
 description: >-
   The TIMMA kitchen display. A tablet in the kitchen that keeps showing and advancing tickets with the WAN unplugged, driven by the kiosk hub over the restaurant LAN (ECOSYSTEM §23).
 publish_to: 'none'
-version: 1.0.4+2015
+version: 1.0.5+2016
 
 environment:
   sdk: ^3.12.2
@@ -42,22 +42,22 @@ dependencies:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_core
-      ref: b5dac75df560e1689565e236da8bf83eb9c544dd
+      ref: a9b185ab7f2768b06ab3b482303270c4d2e74838
   pos_link:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_link
-      ref: b5dac75df560e1689565e236da8bf83eb9c544dd
+      ref: a9b185ab7f2768b06ab3b482303270c4d2e74838
   pos_link_flutter:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_link_flutter
-      ref: b5dac75df560e1689565e236da8bf83eb9c544dd
+      ref: a9b185ab7f2768b06ab3b482303270c4d2e74838
   pos_cloud:
     git:
       url: https://github.com/bej-hooj/timmaeat-app-flutter.git
       path: packages/pos_cloud
-      ref: b5dac75df560e1689565e236da8bf83eb9c544dd
+      ref: a9b185ab7f2768b06ab3b482303270c4d2e74838
 
   # The native SQLite pos_core opens. Its own pubspec says this belongs in "the
   # two APPS' pubspecs" — this is one of the two.

@@ -480,8 +480,7 @@ Future<void> _confirmDelete(
   KdsBoardController controller,
 ) async {
   final AppLocalizations l10n = AppLocalizations.of(context)!;
-  final String label =
-      order.ticketLabelOrNull ?? order.dailyCode ?? order.orderCode ?? '';
+  final String label = order.boardLabelOrNull ?? '';
   final bool? confirmed = await showDialog<bool>(
     context: context,
     builder: (BuildContext dialogContext) => AlertDialog(

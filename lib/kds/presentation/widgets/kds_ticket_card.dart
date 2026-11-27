@@ -106,12 +106,7 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
     final ThemeData theme = Theme.of(context);
     final KdsUrgency urgency = KdsSla.urgencyOf(order, now);
-    // Local ticket code first (it is on the printed slip the customer holds),
-    // then the server's kitchen code, then the order code.
-    final String? identity =
-        order.ticketLabelOrNull ??
-        _clean(order.dailyCode) ??
-        _clean(order.orderCode);
+    final String? identity = order.boardLabelOrNull;
     final Duration waiting = now.difference(KdsSla.agedFrom(order));
     final int waited = waiting.inMinutes;
     final bool paid = order.paymentStatus == PosPaymentStatus.paid;
@@ -252,23 +247,6 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
                           ],
                         ),
                         const SizedBox(height: KdsScale.gapMd),
-                        /*
-             * ⚠ The STATION, not just the number.
-             *
-             * `allocateTicketNumber` counts per till and restarts at 1 every
-             * Douala day, so a branch running two bornes prints two #1s — and
-             * this board is exactly where they meet. `ticketLabelOrNull`
-             * renders `B1-07`, and falls back to the bare number for a sale
-             * written before stations existed rather than inventing a letter:
-             * a wrong station sends a cook to the wrong customer, which is
-             * worse than no station at all.
-             */
-                        // ⚠ A ticket from the CLOUD has no local number — it was
-                        // not printed by any borne here — so it fell through
-                        // this `if` and the card carried NOTHING a cook could
-                        // call out. `daily_code` is the kitchen's own code,
-                        // minted by the server for exactly this (ECOSYSTEM
-                        // §6.4), and `order_code` is the last resort.
                         if (identity != null && !compact)
                           Row(
                             children: <Widget>[
@@ -445,11 +423,6 @@ class _KdsTicketCardState extends State<KdsTicketCard> {
   /// into a bag.
   static int _itemCount(List<PosOrderLine> lines) =>
       lines.fold<int>(0, (int sum, PosOrderLine l) => sum + l.quantity);
-
-  static String? _clean(String? value) {
-    final String? trimmed = value?.trim();
-    return trimmed == null || trimmed.isEmpty ? null : trimmed;
-  }
 
   Color _urgencyColor(ThemeData theme, KdsUrgency urgency) => switch (urgency) {
     KdsUrgency.calm => AppColors.outline,
